@@ -1,0 +1,48 @@
+import type { TemplateManifest } from '../../types';
+import { createTheme, THEME_COLOR_FIELDS } from './shared';
+
+export const welcomeOnboardingManifest = {
+  id: 'welcome-onboarding',
+  name: 'Onboarding steps',
+  category: 'welcome',
+  description: 'A welcome email that guides readers through three first steps.',
+  thumbnailPath: 'template-thumbnails/welcome-onboarding.png',
+  defaults: {
+    templateId: 'welcome-onboarding',
+    schemaVersion: 1,
+    theme: createTheme({ accentColor: '#0369A1' }),
+    fields: {
+      preheader: 'Three quick steps to get value from your new workspace.',
+      logo: { remoteUrl: '', alt: 'Company logo' },
+      greeting: 'Let us get you set up',
+      intro: 'Complete these three steps and your workspace will be ready for the team.',
+      step1Title: 'Create your first project',
+      step1Text: 'Choose a clear goal and add the context your team needs.',
+      step2Title: 'Invite your teammates',
+      step2Text: 'Bring everyone into one place and assign the first actions.',
+      step3Title: 'Publish your work',
+      step3Text: 'Review the details, then share the finished project.',
+      primaryCta: { label: 'Start onboarding', url: 'https://example.com/onboarding' },
+      showSupport: true,
+      supportLink: { label: 'Contact support', url: 'https://example.com/support' },
+      footerText: 'Our support team is here if you need a hand.',
+    },
+  },
+  fields: [
+    { key: 'preheader', type: 'text', label: 'Preheader', group: 'content', maxLength: 140 },
+    { key: 'logo', type: 'image', label: 'Logo', group: 'brand', recommendedSize: '240 x 80 px' },
+    { key: 'greeting', type: 'text', label: 'Greeting', group: 'content', maxLength: 90 },
+    { key: 'intro', type: 'textarea', label: 'Introduction', group: 'content', maxLength: 360, rows: 4 },
+    { key: 'step1Title', type: 'text', label: 'Step 1 title', group: 'content', maxLength: 80 },
+    { key: 'step1Text', type: 'textarea', label: 'Step 1 description', group: 'content', maxLength: 240, rows: 3 },
+    { key: 'step2Title', type: 'text', label: 'Step 2 title', group: 'content', maxLength: 80 },
+    { key: 'step2Text', type: 'textarea', label: 'Step 2 description', group: 'content', maxLength: 240, rows: 3 },
+    { key: 'step3Title', type: 'text', label: 'Step 3 title', group: 'content', maxLength: 80 },
+    { key: 'step3Text', type: 'textarea', label: 'Step 3 description', group: 'content', maxLength: 240, rows: 3 },
+    { key: 'primaryCta', type: 'link', label: 'Primary button', group: 'buttons' },
+    { key: 'showSupport', type: 'toggle', label: 'Show support link', group: 'footer' },
+    { key: 'supportLink', type: 'link', label: 'Support link', group: 'footer' },
+    { key: 'footerText', type: 'textarea', label: 'Footer text', group: 'footer', maxLength: 300, rows: 3 },
+    ...THEME_COLOR_FIELDS,
+  ],
+} as const satisfies TemplateManifest;

@@ -1,0 +1,12 @@
+:root {
+  --color-header: #17242e;
+  --color-canvas: #eef1f3;
+  --color-surface: #ffffff;
+  --color-text: #182126;
+  --color-muted: #596970;
+  --color-border: #d7dde0;
+  --color-accent: #167269;
+  --color-accent-strong: #0f5d56;
+  --color-focus: #ef8c35;
+  --color-selected: #edf7f4;
+}
