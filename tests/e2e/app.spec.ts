@@ -19,12 +19,12 @@ test('selects a template in the workspace shell', async ({ page }) => {
 
   await expect(page).toHaveURL(/#\/studio\/welcome-simple$/);
   await expect(page.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
-  await expect(page.getByLabel('Greeting')).toHaveValue('Welcome aboard!');
+  await expect(page.getByLabel('Greeting')).toHaveValue('Welcome!');
   await expect(page.getByTitle('Email preview')).toHaveAttribute(
     'srcdoc',
-    /Welcome aboard!/,
+    /Welcome!/,
   );
-  await expect(page.getByLabel('Generated HTML')).toHaveValue(/Welcome aboard!/);
+  await expect(page.getByLabel('Generated HTML')).toHaveValue(/Welcome!/);
 });
 
 test('keeps every panel accessible on a mobile viewport', async ({ page }) => {
@@ -59,7 +59,7 @@ test('edits fields and confirms a draft reset', async ({ page }) => {
   await page.getByRole('button', { name: 'Reset draft' }).click();
   await expect(page.getByRole('group', { name: 'Confirm draft reset' })).toBeVisible();
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
-  await expect(page.getByLabel('Heading')).toHaveValue('The Weekly Brief');
+  await expect(page.getByLabel('Heading')).toHaveValue('Weekly digest');
 });
 
 test('switches viewport dimensions without changing generated HTML', async ({ page }) => {

@@ -73,7 +73,7 @@ describe('editor state', () => {
     ).toEqual({
       remoteUrl: 'https://example.com/logo.png',
       localPreviewUrl: 'blob:local-logo',
-      alt: 'Company logo',
+      alt: 'Weekly Digest logo',
     });
 
     store.dispatch(imageLocalPreviewRemoved(imagePayload));
@@ -104,7 +104,7 @@ describe('editor state', () => {
     store.dispatch(draftReset('newsletter-digest'));
 
     const drafts = store.getState().editor.draftsByTemplateId;
-    expect(drafts['newsletter-digest']?.fields.heading).toBe('The Weekly Brief');
+    expect(drafts['newsletter-digest']?.fields.heading).toBe('Weekly digest');
     expect(drafts['welcome-simple']?.fields.greeting).toBe('Keep me');
   });
 

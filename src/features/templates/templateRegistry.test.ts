@@ -37,6 +37,38 @@ describe('template registry', () => {
     }
   });
 
+  it('exposes complete editable brand and footer contracts', () => {
+    for (const manifest of listTemplates()) {
+      expect(manifest.fields).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: 'preheader', type: 'text' }),
+          expect.objectContaining({ key: 'logo', type: 'image' }),
+        ]),
+      );
+      expect(
+        manifest.fields.some(({ group, type }) => group === 'footer' && type === 'url'),
+      ).toBe(false);
+      for (const field of manifest.fields.filter(
+        ({ group, type }) => group === 'footer' && type === 'link',
+      )) {
+        const value = manifest.defaults.fields[field.key];
+        expect(typeof value).toBe('object');
+        if (typeof value === 'object' && value !== null && 'label' in value) {
+          expect(typeof value.label).toBe('string');
+          expect(value.url).toMatch(/^(?:https:|mailto:)/);
+        }
+      }
+    }
+
+    for (const id of ['newsletter-digest', 'newsletter-promo'] as const) {
+      expect(getTemplate(id).fields).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: 'unsubscribeLink', type: 'link' }),
+        ]),
+      );
+    }
+  });
+
   it('returns a deep copy of defaults', () => {
     const firstDraft = getTemplateDefaults('newsletter-digest');
     const originalAccent = firstDraft.theme.accentColor;

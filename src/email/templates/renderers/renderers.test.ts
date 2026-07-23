@@ -15,25 +15,25 @@ const templateCases: readonly TemplateCase[] = [
   {
     id: 'newsletter-digest',
     titleField: 'heading',
-    expectedTitle: 'The Weekly Brief',
+    expectedTitle: 'Weekly digest',
     footerField: 'footerText',
   },
   {
     id: 'newsletter-promo',
     titleField: 'heading',
-    expectedTitle: 'Make your next project happen',
+    expectedTitle: '20% OFF SITEWIDE',
     footerField: 'footerText',
   },
   {
     id: 'welcome-simple',
     titleField: 'greeting',
-    expectedTitle: 'Welcome aboard!',
+    expectedTitle: 'Welcome!',
     footerField: 'footerText',
   },
   {
     id: 'welcome-onboarding',
     titleField: 'greeting',
-    expectedTitle: 'Let us get you set up',
+    expectedTitle: 'Welcome aboard!',
     footerField: 'footerText',
   },
 ];
@@ -117,4 +117,41 @@ describe.each(templateCases)('$id renderer', ({ id, titleField, expectedTitle, f
     );
     expect(result.html).not.toContain('javascript:');
   });
+});
+
+describe('reference layout contracts', () => {
+  it('renders the digest as image-and-copy rows with CTA, preheader, social links, and unsubscribe', () => {
+    const draft = getTemplateDefaults('newsletter-digest');
+    const result = getTemplate('newsletter-digest').render(draft, exportRenderContext);
+
+    expect(result.errors).toEqual([]);
+    expect(result.html).toContain('This week: product thinking, design systems, and growth.');
+    expect(result.html).toContain('class="mobile-stack"');
+    expect(result.html).toContain('width="180" height="135"');
+    expect(result.html.indexOf("Read this week's top stories")).toBeLessThan(
+      result.html.indexOf('digest-strategy.png'),
+    );
+    for (const label of ['X', 'in', 'Email', 'Update preferences', 'Unsubscribe']) {
+      expect(result.html).toContain(`>${label}<`);
+    }
+  });
+
+  it.each(templateCases.map(({ id }) => id))(
+    '%s renders every editable footer link label',
+    (id) => {
+      const definition = getTemplate(id);
+      const draft = getTemplateDefaults(id);
+      const result = definition.render(draft, exportRenderContext);
+
+      for (const field of definition.fields.filter(
+        ({ group, type }) => group === 'footer' && type === 'link',
+      )) {
+        const value = draft.fields[field.key];
+        expect(typeof value === 'object' && value !== null && 'label' in value).toBe(true);
+        if (typeof value === 'object' && value !== null && 'label' in value) {
+          expect(result.html).toContain(value.label.replace('->', '-&gt;'));
+        }
+      }
+    },
+  );
 });

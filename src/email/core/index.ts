@@ -9,6 +9,8 @@ export {
   presentationTable,
   spacer,
   tableCell,
+  tableDataCell,
+  tableRow,
   type BulletproofButtonOptions,
   type CellOptions,
   type ImageOptions,

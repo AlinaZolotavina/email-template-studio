@@ -10,7 +10,7 @@ export interface EmailDocumentOptions {
   lang?: string;
 }
 
-const RESET_STYLES = `html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important}*{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}table,td{mso-table-lspace:0pt!important;mso-table-rspace:0pt!important;border-collapse:collapse!important}img{-ms-interpolation-mode:bicubic;border:0;height:auto;line-height:100%;outline:none;text-decoration:none}a{text-decoration:none}@media screen and (max-width:620px){.email-container{width:100%!important;max-width:100%!important}.mobile-padding{padding-left:20px!important;padding-right:20px!important}.fluid-image{height:auto!important;max-width:100%!important;width:100%!important}}`;
+const RESET_STYLES = `html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important}*{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}table,td{mso-table-lspace:0pt!important;mso-table-rspace:0pt!important;border-collapse:collapse!important}img{-ms-interpolation-mode:bicubic;border:0;height:auto;line-height:100%;outline:none;text-decoration:none}a{text-decoration:none}@media screen and (max-width:620px){.email-container{width:100%!important;max-width:100%!important}.mobile-padding{padding-left:20px!important;padding-right:20px!important}.fluid-image{height:auto!important;max-width:100%!important;width:100%!important}.mobile-stack{display:block!important;width:100%!important}.mobile-stack-pad{padding-left:0!important;padding-top:16px!important}}`;
 
 export function emailDocument(options: EmailDocumentOptions): string {
   if (

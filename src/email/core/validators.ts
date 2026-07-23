@@ -39,6 +39,13 @@ export function validateEmailUrl(
   if (containsControlOrSpace(candidate)) {
     return { valid: false, reason: 'URL contains whitespace or control characters.' };
   }
+  if (
+    purpose === 'image' &&
+    mode === 'preview' &&
+    /^(?:\.\/|\/)[a-z0-9/_-]+\.(?:png|jpe?g|webp|gif)$/i.test(candidate)
+  ) {
+    return { valid: true, normalized: candidate };
+  }
 
   let protocol: string;
   try {

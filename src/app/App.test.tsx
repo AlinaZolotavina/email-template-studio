@@ -47,15 +47,15 @@ describe('App workspace shell', () => {
     renderApp();
 
     expect(screen.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
-    expect(screen.getByDisplayValue('The Weekly Brief')).toBeVisible();
+    expect(screen.getByDisplayValue('Weekly digest')).toBeVisible();
     expect(screen.getByText('newsletter-digest')).toBeVisible();
     expect(screen.getByTitle('Email preview')).toHaveAttribute(
       'srcdoc',
-      expect.stringContaining('The Weekly Brief'),
+      expect.stringContaining('Weekly digest'),
     );
     expect(
       screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,
-    ).toContain('The Weekly Brief');
+    ).toContain('Weekly digest');
     expect(window.location.hash).toBe('#/studio/newsletter-digest');
   });
 
@@ -70,7 +70,7 @@ describe('App workspace shell', () => {
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
     expect(screen.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
     expect(window.location.hash).toBe('#/studio/welcome-simple');
-    expect(screen.getByDisplayValue('Welcome aboard!')).toBeVisible();
+    expect(screen.getByDisplayValue('Welcome!')).toBeVisible();
     expect(within(screen.getByLabelText('Template editor')).getByText('Simple welcome')).toBeVisible();
   });
 

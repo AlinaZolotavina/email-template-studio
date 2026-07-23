@@ -1,91 +1,199 @@
-import { emailText, joinHtml, presentationTable, tableCell } from '../../core';
+import {
+  emailText,
+  joinHtml,
+  presentationTable,
+  tableCell,
+  tableDataCell,
+  tableRow,
+} from '../../core';
 import type { EmailHtml } from '../../core';
 import { newsletterDigestManifest } from '../manifests/newsletterDigest';
 import {
+  brandRow,
   contentTable,
   createTemplateRenderer,
   ctaRow,
-  footerRow,
-  headingRow,
-  logoRow,
-  paragraphRow,
+  linksRow,
   type RenderSession,
 } from './shared';
 
 function article(session: RenderSession, index: number): EmailHtml {
   const image = session.boolean('showArticleImages')
-    ? session.optionalImage(`article${index}Image`, 520, 260)
+    ? session.optionalImage(`article${index}Image`, 180, 135)
     : null;
-  const link = session.link(`article${index}Link`);
-  const linkHtml = session.textLink(`article${index}Link`, link);
+  const link = session.textLink(
+    `article${index}Link`,
+    session.link(`article${index}Link`),
+    session.draft.theme.accentColor,
+    13,
+  );
+  const copy = joinHtml([
+    emailText({
+      text: session.string(`article${index}Category`).toUpperCase(),
+      style: {
+        color: session.draft.theme.accentColor,
+        fontFamily: session.draft.theme.fontFamily,
+        fontSize: 10,
+        fontWeight: 700,
+        lineHeight: 15,
+        margin: [0, 0, 4, 0],
+      },
+    }),
+    emailText({
+      text: session.string(`article${index}Title`),
+      tag: 'h2',
+      style: {
+        color: session.draft.theme.textColor,
+        fontFamily: session.draft.theme.fontFamily,
+        fontSize: 19,
+        fontWeight: 700,
+        lineHeight: 23,
+        margin: [0, 0, 6, 0],
+      },
+    }),
+    emailText({
+      text: session.string(`article${index}Text`),
+      style: {
+        color: session.draft.theme.mutedTextColor,
+        fontFamily: session.draft.theme.fontFamily,
+        fontSize: 13,
+        lineHeight: 19,
+        margin: [0, 0, 7, 0],
+      },
+    }),
+    link,
+  ]);
 
   return tableCell({
     children: presentationTable({
       width: '100%',
-      children: joinHtml([
-        image === null
-          ? null
-          : tableCell({ children: image, style: { padding: [0, 0, 20, 0] } }),
-        tableCell({
-          children: emailText({
-            text: session.string(`article${index}Title`),
-            tag: 'h2',
-            style: {
-              color: session.draft.theme.textColor,
-              fontFamily: session.draft.theme.fontFamily,
-              fontSize: 22,
-              fontWeight: 700,
-              lineHeight: 29,
-              margin: [0, 0, 8, 0],
-            },
+      children: tableRow(
+        joinHtml([
+          image === null
+            ? null
+            : tableDataCell({
+                children: image,
+                className: 'mobile-stack',
+                valign: 'middle',
+                style: { width: 180 },
+              }),
+          tableDataCell({
+            children: copy,
+            className: image === null ? undefined : 'mobile-stack mobile-stack-pad',
+            valign: 'middle',
+            style: { padding: image === null ? 0 : [0, 0, 0, 22] },
           }),
-        }),
-        tableCell({
-          children: emailText({
-            text: session.string(`article${index}Text`),
-            style: {
-              color: session.draft.theme.mutedTextColor,
-              fontFamily: session.draft.theme.fontFamily,
-              fontSize: 15,
-              lineHeight: 24,
-              margin: [0, 0, 12, 0],
-            },
-          }),
-        }),
-        linkHtml === null ? null : tableCell({ children: linkHtml }),
-      ]),
+        ]),
+      ),
     }),
     style: {
-      borderColor: '#E5E7EB',
+      borderColor: '#DDE5E5',
       borderStyle: 'solid',
       borderWidth: 1,
-      padding: [24, 40],
+      padding: [20, 32],
       backgroundColor: session.draft.theme.surfaceColor,
     },
   });
 }
 
+function digestFooter(session: RenderSession): EmailHtml {
+  const share = session.textLink(
+    'shareLink',
+    session.link('shareLink'),
+    session.draft.theme.accentColor,
+    12,
+  );
+  return joinHtml([
+    tableCell({
+      children: joinHtml([
+        emailText({
+          text: session.string('shareText'),
+          style: {
+            color: session.draft.theme.mutedTextColor,
+            fontFamily: session.draft.theme.fontFamily,
+            fontSize: 12,
+            lineHeight: 18,
+            margin: [0, 0, 3, 0],
+            textAlign: 'center',
+          },
+        }),
+        share,
+      ]),
+      align: 'center',
+      style: { padding: [18, 32, 10, 32] },
+    }),
+    linksRow(session, ['socialX', 'socialLinkedIn', 'socialEmail'], 12),
+    tableCell({
+      children: emailText({
+        text: session.string('footerText'),
+        style: {
+          color: session.draft.theme.mutedTextColor,
+          fontFamily: session.draft.theme.fontFamily,
+          fontSize: 10,
+          lineHeight: 16,
+          margin: 0,
+          textAlign: 'center',
+        },
+      }),
+      align: 'center',
+      style: { padding: [12, 32, 0, 32] },
+    }),
+    linksRow(session, ['preferencesLink', 'unsubscribeLink'], 10),
+    tableCell({
+      children: emailText({
+        text: '',
+        style: { margin: 0 },
+      }),
+      style: { padding: [0, 0, 14, 0] },
+    }),
+  ]);
+}
+
 export const renderNewsletterDigest = createTemplateRenderer(
   newsletterDigestManifest,
   'heading',
-  (session) => {
-    const companyUrl = session.string('companyUrl');
-    return contentTable(
+  (session) =>
+    contentTable(
       session,
       joinHtml([
-        logoRow(session),
-        headingRow(session, session.string('heading')),
-        paragraphRow(session, session.string('intro')),
+        brandRow(session, '//'),
+        tableCell({
+          children: emailText({
+            text: session.string('heading'),
+            tag: 'h1',
+            style: {
+              color: session.draft.theme.textColor,
+              fontFamily: session.draft.theme.fontFamily,
+              fontSize: 34,
+              fontWeight: 700,
+              lineHeight: 41,
+              margin: 0,
+              textAlign: 'center',
+            },
+          }),
+          align: 'center',
+          style: { padding: [12, 32, 8, 32] },
+        }),
+        tableCell({
+          children: emailText({
+            text: session.string('intro'),
+            style: {
+              color: session.draft.theme.mutedTextColor,
+              fontFamily: session.draft.theme.fontFamily,
+              fontSize: 15,
+              lineHeight: 23,
+              margin: 0,
+              textAlign: 'center',
+            },
+          }),
+          align: 'center',
+          style: { padding: [0, 54, 18, 54] },
+        }),
+        ctaRow(session),
         article(session, 1),
         article(session, 2),
         article(session, 3),
-        ctaRow(session),
-        footerRow(session, session.string('footerText'), {
-          key: 'companyUrl',
-          label: 'Visit our website',
-          url: companyUrl,
-        }),
+        digestFooter(session),
       ]),
-    );
-  },
+    ),
 );

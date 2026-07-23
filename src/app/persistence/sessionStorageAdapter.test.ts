@@ -50,7 +50,7 @@ describe('session storage adapter', () => {
     expect(store.getState().preview.viewport).toBe('mobile');
     expect(restored?.fields.greeting).toBe('Restored greeting');
     expect(restored?.fields.body).toBe(
-      'Thanks for joining us. Your workspace is ready, and you can begin whenever you are.',
+      "You're all set to get started. Take a moment to explore and see what you can do.",
     );
     expect(restored?.fields.removedLegacyField).toBeUndefined();
   });

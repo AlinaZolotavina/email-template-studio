@@ -66,9 +66,11 @@ describe('EditorPanel integration', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Show article images' }));
 
     await user.click(screen.getByText('Footer'));
-    const companyUrl = screen.getByLabelText('Company URL');
-    await user.clear(companyUrl);
-    await user.type(companyUrl, 'https://company.test');
+    const preferences = screen.getByRole('group', { name: 'Preferences link' });
+    await user.clear(within(preferences).getByLabelText('Label'));
+    await user.type(within(preferences).getByLabelText('Label'), 'Email settings');
+    await user.clear(within(preferences).getByLabelText('URL'));
+    await user.type(within(preferences).getByLabelText('URL'), 'https://company.test/preferences');
 
     const draft = store.getState().editor.draftsByTemplateId['newsletter-digest'];
     expect(draft?.fields.heading).toBe('Edited heading');
@@ -76,8 +78,11 @@ describe('EditorPanel integration', () => {
     expect(draft?.fields.article1Link).toEqual({ label: 'Explore', url: 'https://example.com/article-1' });
     expect(draft?.theme.backgroundColor).toBe('#123456');
     expect(draft?.fields.showArticleImages).toBe(false);
-    expect(draft?.fields.companyUrl).toBe('https://company.test');
-  }, 10_000);
+    expect(draft?.fields.preferencesLink).toEqual({
+      label: 'Email settings',
+      url: 'https://company.test/preferences',
+    });
+  }, 20_000);
 
   it('keeps invalid color out of Redux', async () => {
     const user = userEvent.setup();
@@ -98,7 +103,7 @@ describe('EditorPanel integration', () => {
 
     const logo = store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo;
     expect(localAssets.attach).toHaveBeenCalledWith('newsletter-digest', 'logo', file);
-    expect(logo).toEqual({ remoteUrl: '', alt: 'Company logo', localPreviewUrl: 'blob:local-logo' });
+    expect(logo).toEqual({ remoteUrl: '', alt: 'Weekly Digest logo', localPreviewUrl: 'blob:local-logo' });
     expect(containsBinary(store.getState())).toBe(false);
     expect(JSON.stringify(store.getState())).not.toContain('logo.png');
 
@@ -122,7 +127,7 @@ describe('EditorPanel integration', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Remove local preview for Logo' }));
     expect(localAssets.release).toHaveBeenCalledWith('newsletter-digest', 'logo');
-    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual({ remoteUrl: '', alt: 'Company logo' });
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual({ remoteUrl: '', alt: 'Weekly Digest logo' });
   });
 
   it('requires explicit reset confirmation and revokes template URLs', async () => {
@@ -135,7 +140,7 @@ describe('EditorPanel integration', () => {
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.heading).toBe('Temporary');
     await user.click(screen.getByRole('button', { name: /^Reset$/ }));
     expect(localAssets.releaseTemplate).toHaveBeenCalledWith('newsletter-digest');
-    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.heading).toBe('The Weekly Brief');
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.heading).toBe('Weekly digest');
   });
 
   it('clears an invalid local color draft when the template is reset', async () => {

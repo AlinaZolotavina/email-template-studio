@@ -36,6 +36,7 @@ export function presentationTable(options: TableOptions): EmailHtml {
 export interface CellOptions {
   children: EmailHtml;
   align?: 'left' | 'center' | 'right';
+  className?: string;
   colspan?: number;
   style?: EmailStyle;
   valign?: 'top' | 'middle' | 'bottom';
@@ -46,9 +47,25 @@ export function tableCell(options: CellOptions): EmailHtml {
   const valign = options.valign ? ` valign="${options.valign}"` : '';
   const colspan =
     options.colspan === undefined ? '' : ` colspan="${numeric(options.colspan, 'colspan')}"`;
+  const className = options.className ? ` class="${escapeAttribute(options.className)}"` : '';
   return trustedHtml(
-    `<tr><td${align}${valign}${colspan}${styleAttribute(options.style)}>${options.children}</td></tr>`,
+    `<tr><td${align}${valign}${colspan}${className}${styleAttribute(options.style)}>${options.children}</td></tr>`,
   );
+}
+
+export function tableDataCell(options: CellOptions): EmailHtml {
+  const align = options.align ? ` align="${options.align}"` : '';
+  const valign = options.valign ? ` valign="${options.valign}"` : '';
+  const colspan =
+    options.colspan === undefined ? '' : ` colspan="${numeric(options.colspan, 'colspan')}"`;
+  const className = options.className ? ` class="${escapeAttribute(options.className)}"` : '';
+  return trustedHtml(
+    `<td${align}${valign}${colspan}${className}${styleAttribute(options.style)}>${options.children}</td>`,
+  );
+}
+
+export function tableRow(children: EmailHtml): EmailHtml {
+  return trustedHtml(`<tr>${children}</tr>`);
 }
 
 export interface TextOptions {

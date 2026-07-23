@@ -18,6 +18,8 @@ import {
   emailText,
   joinHtml,
   presentationTable,
+  tableDataCell,
+  tableRow,
   tableCell,
   validateEmailUrl,
   type EmailHtml,
@@ -33,7 +35,7 @@ export interface RenderSession {
   link(key: string): LinkValue;
   image(key: string): ImageValue;
   optionalImage(key: string, width: number, height?: number): EmailHtml | null;
-  textLink(key: string, value: LinkValue, color?: string): EmailHtml | null;
+  textLink(key: string, value: LinkValue, color?: string, fontSize?: number): EmailHtml | null;
   button(key: string, value: LinkValue): EmailHtml | null;
 }
 
@@ -118,7 +120,12 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     });
   };
 
-  const textLink = (key: string, value: LinkValue, color?: string): EmailHtml | null => {
+  const textLink = (
+    key: string,
+    value: LinkValue,
+    color?: string,
+    fontSize = 15,
+  ): EmailHtml | null => {
     const validation = validateEmailUrl(value.url, 'link');
     if (!validation.valid) {
       errors.push({
@@ -134,7 +141,7 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
       style: {
         color: color ?? draft.theme.accentColor,
         fontFamily: draft.theme.fontFamily,
-        fontSize: 15,
+        fontSize,
         fontWeight: 600,
         textDecoration: 'underline',
       },
@@ -260,6 +267,65 @@ export function logoRow(session: RenderSession): EmailHtml | null {
     children: logo,
     align: 'center',
     style: { padding: [28, 32, 16, 32], backgroundColor: session.draft.theme.surfaceColor },
+  });
+}
+
+export function brandRow(session: RenderSession, fallbackMark: string): EmailHtml {
+  const logo = session.optionalImage('logo', 120, 40);
+  return tableCell({
+    children:
+      logo ??
+      emailText({
+        text: fallbackMark,
+        tag: 'p',
+        style: {
+          color: session.draft.theme.accentColor,
+          fontFamily: session.draft.theme.fontFamily,
+          fontSize: 26,
+          fontWeight: 700,
+          lineHeight: 32,
+          margin: 0,
+          textAlign: 'center',
+        },
+      }),
+    align: 'center',
+    style: {
+      padding: [28, 32, 16, 32],
+      backgroundColor: session.draft.theme.surfaceColor,
+    },
+  });
+}
+
+export function linksRow(
+  session: RenderSession,
+  keys: string[],
+  fontSize = 11,
+): EmailHtml | null {
+  const cells = keys
+    .map((key) => {
+      const link = session.textLink(
+        key,
+        session.link(key),
+        session.draft.theme.mutedTextColor,
+        fontSize,
+      );
+      return link === null
+        ? null
+        : tableDataCell({
+            children: link,
+            align: 'center',
+            style: { padding: [0, 7] },
+          });
+    })
+    .filter((value): value is EmailHtml => value !== null);
+  if (cells.length === 0) return null;
+  return tableCell({
+    children: presentationTable({
+      align: 'center',
+      children: tableRow(joinHtml(cells)),
+    }),
+    align: 'center',
+    style: { padding: [8, 24, 0, 24] },
   });
 }
 

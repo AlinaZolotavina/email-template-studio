@@ -11,13 +11,32 @@ function cloneFieldValue(value: EmailFieldValue): EmailFieldValue {
   return typeof value === 'object' ? { ...value } : value;
 }
 
+function matchesDefaultShape(
+  defaultValue: EmailFieldValue,
+  candidate: PersistedEmailFieldValue,
+): boolean {
+  if (typeof defaultValue !== 'object' || defaultValue === null) {
+    return typeof candidate === typeof defaultValue;
+  }
+  if (typeof candidate !== 'object' || candidate === null) return false;
+  if ('label' in defaultValue) return 'label' in candidate && 'url' in candidate;
+  return 'remoteUrl' in candidate && 'alt' in candidate;
+}
+
 export function mergeDraftWithDefaults(
   persistedDraft: PersistedEmailDraft,
 ): EmailDraft {
   const defaults = getTemplateDefaults(persistedDraft.templateId);
   const currentFieldKeys = new Set(Object.keys(defaults.fields));
-  const persistedFields = Object.entries(persistedDraft.fields).filter(([key]) =>
-    currentFieldKeys.has(key),
+  const persistedFields = Object.entries(persistedDraft.fields).filter(
+    ([key, value]) => {
+      const defaultValue = defaults.fields[key];
+      return (
+        currentFieldKeys.has(key) &&
+        defaultValue !== undefined &&
+        matchesDefaultShape(defaultValue, value)
+      );
+    },
   );
 
   return {
