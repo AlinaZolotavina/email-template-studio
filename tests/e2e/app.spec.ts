@@ -68,3 +68,41 @@ test('switches viewport dimensions without changing generated HTML', async ({ pa
   expect(await frame.getAttribute('srcdoc')).toBe(previewHtml);
   expect(await page.getByLabel('Generated HTML').inputValue()).toBe(exportHtml);
 });
+
+test('blocks local-only images, then copies and downloads the exact export HTML', async ({
+  context,
+  page,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  const logoGroup = page.getByRole('group', { name: 'Logo' });
+  await logoGroup
+    .locator('input[type="file"]')
+    .setInputFiles('public/template-thumbnails/newsletter-digest.png');
+
+  await expect(page.getByRole('button', { name: 'Copy HTML' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Download .html' })).toBeDisabled();
+  await expect(
+    page.getByText('Add a valid public image URL before exporting.'),
+  ).toBeVisible();
+  await logoGroup
+    .getByLabel('Public image URL')
+    .fill('https://example.com/public-logo.png');
+
+  const codeView = page.getByLabel('Generated HTML');
+  const exportHtml = await codeView.inputValue();
+  expect(exportHtml).toContain('https://example.com/public-logo.png');
+  expect(exportHtml).not.toContain('blob:');
+
+  await page.getByRole('button', { name: 'Copy HTML' }).click();
+  await expect(page.getByRole('status')).toHaveText('HTML copied to clipboard.');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(exportHtml);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download .html' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('newsletter-digest-email.html');
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+});

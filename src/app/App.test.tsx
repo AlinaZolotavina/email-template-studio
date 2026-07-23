@@ -2,7 +2,10 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
-import { fieldChanged } from '../features/editor/editorSlice';
+import {
+  fieldChanged,
+  imageLocalPreviewAttached,
+} from '../features/editor/editorSlice';
 import { TemplateGallery } from '../features/templates/components/TemplateGallery';
 import { listTemplates } from '../features/templates/templateRegistry';
 import { createAppStore, type AppStore } from './store';
@@ -103,6 +106,27 @@ describe('App workspace shell', () => {
     expect(frame).toHaveAttribute('width', '375');
     expect(frame).toHaveAttribute('srcdoc', previewHtml);
     expect(screen.getByLabelText('Generated HTML')).toHaveValue(exportHtml);
+  });
+
+  it('blocks both export actions for a local-only image', () => {
+    const store = createAppStore();
+    store.dispatch(
+      imageLocalPreviewAttached({
+        templateId: 'newsletter-digest',
+        key: 'logo',
+        localPreviewUrl: 'blob:local-logo',
+      }),
+    );
+    renderApp(store);
+
+    expect(screen.getByRole('button', { name: 'Copy HTML' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Download .html' })).toBeDisabled();
+    expect(
+      screen.getByText('Add a valid public image URL before exporting.'),
+    ).toBeVisible();
+    expect(
+      screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,
+    ).not.toContain('blob:');
   });
 
   it('supports arrow, Home, and End navigation across category tabs', () => {

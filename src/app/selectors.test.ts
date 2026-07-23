@@ -1,5 +1,6 @@
 import {
   selectCanExport,
+  selectExportBlockReasons,
   selectExportRenderResult,
   selectPreviewRenderResult,
   selectSelectedDraft,
@@ -60,6 +61,9 @@ describe('state selectors', () => {
     );
     expect(selectExportRenderResult(store.getState()).html).not.toContain('blob:');
     expect(selectCanExport(store.getState())).toBe(false);
+    expect(selectExportBlockReasons(store.getState())).toContain(
+      'Add a valid public image URL before exporting.',
+    );
 
     store.dispatch(
       imageRemoteUrlChanged({
@@ -74,6 +78,7 @@ describe('state selectors', () => {
       'https://example.com/public-logo.png',
     );
     expect(selectCanExport(store.getState())).toBe(true);
+    expect(selectExportBlockReasons(store.getState())).toEqual([]);
   });
 
   it('blocks export for a non-empty image URL with a forbidden protocol', () => {
@@ -88,5 +93,8 @@ describe('state selectors', () => {
 
     expect(selectExportRenderResult(store.getState()).html).not.toContain('data:');
     expect(selectCanExport(store.getState())).toBe(false);
+    expect(selectExportBlockReasons(store.getState())).toContain(
+      'Add a valid public image URL before exporting.',
+    );
   });
 });

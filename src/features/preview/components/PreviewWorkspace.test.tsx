@@ -22,9 +22,12 @@ function StatefulWorkspace() {
   const [viewport, setViewport] = useState<PreviewViewport>('desktop');
   return (
     <PreviewWorkspace
+      canExport
       exportResult={exportResult}
+      exportBlockReasons={[]}
       onViewportChange={setViewport}
       previewResult={previewResult}
+      templateId="newsletter-digest"
       viewport={viewport}
     />
   );
@@ -78,9 +81,12 @@ describe('PreviewWorkspace', () => {
   it('renders loading and renderer error fallbacks', () => {
     const { rerender } = render(
       <PreviewWorkspace
+        canExport
         exportResult={exportResult}
+        exportBlockReasons={[]}
         onViewportChange={vi.fn()}
         previewResult={previewResult}
+        templateId="newsletter-digest"
         status="loading"
         viewport="desktop"
       />,
@@ -89,13 +95,16 @@ describe('PreviewWorkspace', () => {
 
     rerender(
       <PreviewWorkspace
+        canExport
         exportResult={exportResult}
+        exportBlockReasons={[]}
         onViewportChange={vi.fn()}
         previewResult={{
           html: '',
           warnings: [],
           errors: [{ code: 'render_failed', message: 'Renderer exploded.' }],
         }}
+        templateId="newsletter-digest"
         viewport="desktop"
       />,
     );
@@ -104,5 +113,88 @@ describe('PreviewWorkspace', () => {
     );
     expect(screen.getByRole('alert')).toHaveTextContent('Renderer exploded.');
     expect(screen.queryByTitle('Email preview')).not.toBeInTheDocument();
+  });
+
+  it('copies and downloads exactly the HTML shown in the code view', async () => {
+    const copyService = vi.fn().mockResolvedValue({
+      ok: true,
+      method: 'clipboard',
+    });
+    const downloadService = vi.fn(() => ({
+      ok: true as const,
+      filename: 'newsletter-digest-email.html',
+    }));
+    render(
+      <PreviewWorkspace
+        canExport
+        copyService={copyService}
+        downloadService={downloadService}
+        exportBlockReasons={[]}
+        exportResult={exportResult}
+        onViewportChange={vi.fn()}
+        previewResult={previewResult}
+        templateId="newsletter-digest"
+        viewport="desktop"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy HTML' }));
+    expect(copyService).toHaveBeenCalledWith(exportResult.html);
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'HTML copied to clipboard.',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download .html' }));
+    expect(downloadService).toHaveBeenCalledWith(
+      exportResult.html,
+      'newsletter-digest',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Download started: newsletter-digest-email.html',
+    );
+  });
+
+  it('disables export actions with an accessible explanation', () => {
+    render(
+      <PreviewWorkspace
+        canExport={false}
+        exportBlockReasons={['Add a valid public image URL before exporting.']}
+        exportResult={exportResult}
+        onViewportChange={vi.fn()}
+        previewResult={previewResult}
+        templateId="newsletter-digest"
+        viewport="desktop"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Copy HTML' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Download .html' })).toBeDisabled();
+    expect(screen.getByText('Export unavailable')).toBeVisible();
+    expect(
+      screen.getByText('Add a valid public image URL before exporting.'),
+    ).toBeVisible();
+  });
+
+  it('announces copy errors', async () => {
+    render(
+      <PreviewWorkspace
+        canExport
+        copyService={vi.fn().mockResolvedValue({
+          ok: false,
+          message: 'Clipboard permission was denied.',
+        })}
+        exportBlockReasons={[]}
+        exportResult={exportResult}
+        onViewportChange={vi.fn()}
+        previewResult={previewResult}
+        templateId="newsletter-digest"
+        viewport="desktop"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy HTML' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Clipboard permission was denied.',
+    );
   });
 });

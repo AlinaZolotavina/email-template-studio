@@ -110,12 +110,22 @@ const selectHasUnexportableImage = createSelector(
     }),
 );
 
-export const selectCanExport = createSelector(
+export const selectExportBlockReasons = createSelector(
   [selectDraftValidation, selectExportRenderResult, selectHasUnexportableImage],
-  (validation, renderResult, hasUnexportableImage) =>
-    validation.isValid &&
-    renderResult.errors.length === 0 &&
-    !hasUnexportableImage,
+  (validation, renderResult, hasUnexportableImage): string[] => {
+    const reasons = new Set<string>();
+    if (hasUnexportableImage) {
+      reasons.add('Add a valid public image URL before exporting.');
+    }
+    for (const error of validation.errors) reasons.add(error);
+    for (const error of renderResult.errors) reasons.add(error.message);
+    return [...reasons];
+  },
+);
+
+export const selectCanExport = createSelector(
+  [selectExportBlockReasons],
+  (reasons) => reasons.length === 0,
 );
 
 export const selectPersistableSessionState = createSelector(

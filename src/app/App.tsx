@@ -13,6 +13,8 @@ import {
 } from '../infrastructure/localAssets';
 import { useAppDispatch, useAppSelector } from './hooks';
 import {
+  selectCanExport,
+  selectExportBlockReasons,
   selectExportRenderResult,
   selectPreviewRenderResult,
   selectSelectedTemplateDefinition,
@@ -26,6 +28,8 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
   const selectedTemplate = useAppSelector(selectSelectedTemplateDefinition);
   const previewResult = useAppSelector(selectPreviewRenderResult);
   const exportResult = useAppSelector(selectExportRenderResult);
+  const canExport = useAppSelector(selectCanExport);
+  const exportBlockReasons = useAppSelector(selectExportBlockReasons);
   const previewViewport = useAppSelector((state) => state.preview.viewport);
   const localAssets = useMemo(
     () => providedLocalAssets ?? createBrowserLocalAssetsManager(),
@@ -72,9 +76,12 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
           </header>
 
           <PreviewWorkspace
+            canExport={canExport}
             exportResult={exportResult}
+            exportBlockReasons={exportBlockReasons}
             onViewportChange={(viewport) => dispatch(viewportChanged(viewport))}
             previewResult={previewResult}
+            templateId={selectedTemplate.id}
             viewport={previewViewport}
           />
         </section>

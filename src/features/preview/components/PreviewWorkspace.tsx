@@ -1,7 +1,12 @@
-import { Code2, Monitor, Smartphone } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
+import { Code2, Copy, Download, Monitor, Smartphone } from 'lucide-react';
+import { useState, type KeyboardEvent } from 'react';
 
 import type { RenderIssue, RenderResult } from '../../../email/types';
+import { copyText, type CopyResult } from '../../../infrastructure/clipboard';
+import {
+  downloadHtml,
+  type DownloadResult,
+} from '../../../infrastructure/download';
 import type { PreviewViewport } from '../previewSlice';
 import { EmailPreviewFrame } from './EmailPreviewFrame';
 import styles from './PreviewWorkspace.module.css';
@@ -11,7 +16,12 @@ interface PreviewWorkspaceProps {
   exportResult: RenderResult;
   viewport: PreviewViewport;
   onViewportChange: (viewport: PreviewViewport) => void;
+  templateId: string;
+  canExport: boolean;
+  exportBlockReasons: string[];
   status?: 'loading' | 'ready';
+  copyService?: (html: string) => Promise<CopyResult>;
+  downloadService?: (html: string, templateId: string) => DownloadResult;
 }
 
 const VIEWPORTS: {
@@ -38,8 +48,69 @@ export function PreviewWorkspace({
   exportResult,
   viewport,
   onViewportChange,
+  templateId,
+  canExport,
+  exportBlockReasons,
   status = 'ready',
+  copyService = copyText,
+  downloadService = downloadHtml,
 }: PreviewWorkspaceProps) {
+  const [copyPending, setCopyPending] = useState(false);
+  const [feedback, setFeedback] = useState<
+    { html: string; kind: 'success' | 'error'; message: string } | undefined
+  >();
+  const visibleFeedback =
+    feedback?.html === exportResult.html ? feedback : undefined;
+
+  const handleCopy = async () => {
+    const html = exportResult.html;
+    setCopyPending(true);
+    setFeedback(undefined);
+    try {
+      const result = await copyService(html);
+      setFeedback(
+        result.ok
+          ? {
+              html,
+              kind: 'success',
+              message: 'HTML copied to clipboard.',
+            }
+          : { html, kind: 'error', message: result.message },
+      );
+    } catch {
+      setFeedback({
+        html,
+        kind: 'error',
+        message: 'Could not copy HTML. Select the generated code and copy it manually.',
+      });
+    } finally {
+      setCopyPending(false);
+    }
+  };
+
+  const handleDownload = () => {
+    const html = exportResult.html;
+    setFeedback(undefined);
+    try {
+      const result = downloadService(html, templateId);
+      setFeedback(
+        result.ok
+          ? {
+              html,
+              kind: 'success',
+              message: `Download started: ${result.filename}`,
+            }
+          : { html, kind: 'error', message: result.message },
+      );
+    } catch {
+      setFeedback({
+        html,
+        kind: 'error',
+        message: 'Could not download the HTML file. Please try again.',
+      });
+    }
+  };
+
   const handleTabKeyDown = (
     event: KeyboardEvent<HTMLButtonElement>,
     currentViewport: PreviewViewport,
@@ -144,6 +215,50 @@ export function PreviewWorkspace({
           value={exportResult.html}
           wrap="off"
         />
+        <footer className={styles.exportFooter}>
+          <div className={styles.exportActions}>
+            <button
+              aria-describedby={!canExport ? 'export-block-reasons' : undefined}
+              disabled={!canExport || copyPending}
+              onClick={() => void handleCopy()}
+              type="button"
+            >
+              <Copy aria-hidden="true" size={15} />
+              {copyPending ? 'Copying...' : 'Copy HTML'}
+            </button>
+            <button
+              aria-describedby={!canExport ? 'export-block-reasons' : undefined}
+              disabled={!canExport || copyPending}
+              onClick={handleDownload}
+              type="button"
+            >
+              <Download aria-hidden="true" size={15} />
+              Download .html
+            </button>
+          </div>
+          {!canExport && exportBlockReasons.length > 0 && (
+            <div className={styles.exportBlocked} id="export-block-reasons">
+              <strong>Export unavailable</strong>
+              <ul>
+                {exportBlockReasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {visibleFeedback !== undefined && (
+            <p
+              className={
+                visibleFeedback.kind === 'error'
+                  ? styles.exportError
+                  : styles.exportSuccess
+              }
+              role={visibleFeedback.kind === 'error' ? 'alert' : 'status'}
+            >
+              {visibleFeedback.message}
+            </p>
+          )}
+        </footer>
       </section>
     </div>
   );
