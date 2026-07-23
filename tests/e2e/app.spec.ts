@@ -1,6 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const SESSION_STORAGE_KEY = 'email-template-studio:session:v1';
+
+async function openDigest(page: Page) {
+  await page.getByRole('radio', { name: /Weekly digest/ }).click();
+}
 
 test('selects a template in the workspace shell', async ({ page }) => {
   await page.goto('/');
@@ -8,7 +12,7 @@ test('selects a template in the workspace shell', async ({ page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: 'Email Template Studio' }),
   ).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
 
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
@@ -25,8 +29,8 @@ test('selects a template in the workspace shell', async ({ page }) => {
 test('keeps every panel accessible on a mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await openDigest(page);
 
-  await expect(page.getByLabel('Template gallery')).toBeVisible();
   await expect(page.getByTitle('Email preview')).toBeVisible();
   await expect(page.getByLabel('Generated HTML')).toBeVisible();
   await expect(page.getByLabel('Template editor')).toBeVisible();
@@ -37,6 +41,7 @@ test('keeps every panel accessible on a mobile viewport', async ({ page }) => {
 
 test('edits fields and confirms a draft reset', async ({ page }) => {
   await page.goto('/');
+  await openDigest(page);
   await page.getByLabel('Heading').fill('A browser-edited heading');
   await expect(page.getByLabel('Heading')).toHaveValue('A browser-edited heading');
   await expect(page.getByTitle('Email preview')).toHaveAttribute(
@@ -58,6 +63,7 @@ test('edits fields and confirms a draft reset', async ({ page }) => {
 
 test('switches viewport dimensions without changing generated HTML', async ({ page }) => {
   await page.goto('/');
+  await openDigest(page);
 
   const frame = page.getByTitle('Email preview');
   const previewHtml = await frame.getAttribute('srcdoc');
@@ -73,6 +79,7 @@ test('switches viewport dimensions without changing generated HTML', async ({ pa
 
 test('restores the selected template, draft, and viewport after refresh', async ({ page }) => {
   await page.goto('/');
+  await openDigest(page);
   await page.getByLabel('Heading').fill('Persisted browser draft');
   await page.getByRole('tab', { name: 'Mobile' }).click();
 
@@ -89,6 +96,7 @@ test('restores the selected template, draft, and viewport after refresh', async 
     .toBe(true);
 
   await page.reload();
+  await openDigest(page);
 
   await expect(page.getByLabel('Heading')).toHaveValue('Persisted browser draft');
   await expect(page.getByRole('tab', { name: 'Mobile' })).toHaveAttribute(
@@ -103,16 +111,20 @@ test('restores the selected template, draft, and viewport after refresh', async 
 
 test('keeps drafts isolated while switching between templates', async ({ page }) => {
   await page.goto('/');
+  await openDigest(page);
   await page.getByLabel('Heading').fill('Digest-only heading');
 
+  await page.getByRole('button', { name: 'Templates' }).click();
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
   await page.getByLabel('Greeting').fill('Welcome-only greeting');
 
+  await page.getByRole('button', { name: 'Templates' }).click();
   await page.getByRole('tab', { name: 'Newsletter' }).click();
   await page.getByRole('radio', { name: /Weekly digest/ }).click();
   await expect(page.getByLabel('Heading')).toHaveValue('Digest-only heading');
 
+  await page.getByRole('button', { name: 'Templates' }).click();
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
   await expect(page.getByLabel('Greeting')).toHaveValue('Welcome-only greeting');
@@ -124,6 +136,7 @@ test('blocks local-only images, then copies and downloads the exact export HTML'
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/');
+  await openDigest(page);
 
   const logoGroup = page.getByRole('group', { name: 'Logo' });
   await logoGroup
@@ -146,7 +159,8 @@ test('blocks local-only images, then copies and downloads the exact export HTML'
 
   await page.getByRole('button', { name: 'Copy HTML' }).click();
   await expect(page.getByRole('status')).toHaveText('HTML copied to clipboard.');
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(exportHtml);
+  const clipboardHtml = await page.evaluate(() => navigator.clipboard.readText());
+  expect(clipboardHtml.replace(/\r\n/g, '\n')).toBe(exportHtml);
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download .html' }).click();

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
@@ -8,7 +8,7 @@ import type { LocalAssetsManager } from '../../../infrastructure/localAssets';
 
 function createAssetsMock(): LocalAssetsManager {
   return {
-    attach: vi.fn(() => 'blob:local-logo'),
+    attach: vi.fn(() => Promise.resolve('blob:local-logo')),
     release: vi.fn(),
     releaseTemplate: vi.fn(),
     releaseAll: vi.fn(),
@@ -23,6 +23,7 @@ function renderEditor() {
       <App localAssets={localAssets} />
     </Provider>,
   );
+  fireEvent.click(screen.getByRole('radio', { name: /Weekly digest/ }));
   return { ...result, store, localAssets };
 }
 
@@ -97,8 +98,10 @@ describe('EditorPanel integration', () => {
     expect(containsBinary(store.getState())).toBe(false);
     expect(JSON.stringify(store.getState())).not.toContain('logo.png');
 
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
     await user.click(screen.getByRole('tab', { name: 'Newsletter' }));
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual(logo);

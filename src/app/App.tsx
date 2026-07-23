@@ -1,5 +1,10 @@
-import { LayoutTemplate } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import {
+  ArrowLeft,
+  Copy,
+  LayoutTemplate,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { EditorPanel } from '../features/editor/components/EditorPanel';
 import { PreviewWorkspace } from '../features/preview/components/PreviewWorkspace';
@@ -25,6 +30,7 @@ const templates = listTemplates();
 
 export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalAssetsManager }) {
   const dispatch = useAppDispatch();
+  const [studioOpen, setStudioOpen] = useState(false);
   const selectedTemplate = useAppSelector(selectSelectedTemplateDefinition);
   const previewResult = useAppSelector(selectPreviewRenderResult);
   const exportResult = useAppSelector(selectExportRenderResult);
@@ -55,41 +61,69 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
         <span className={styles.status}>Session saved in this tab</span>
       </header>
 
-      <main className={styles.workspace}>
-        <aside className={styles.templatePanel} aria-label="Template gallery">
+      {!studioOpen ? (
+        <main className={styles.home}>
+          <section className={styles.promo} aria-labelledby="promo-title">
+            <p className={styles.eyebrow}>Email creation, simplified</p>
+            <h2 id="promo-title">Choose. Customize. Copy.</h2>
+            <p>Pick a layout, make it yours, and export email-ready HTML. Easy peasy.</p>
+            <ol className={styles.steps}>
+              <li><LayoutTemplate aria-hidden="true" size={18} /><span><strong>Choose</strong> a template</span></li>
+              <li><SlidersHorizontal aria-hidden="true" size={18} /><span><strong>Customize</strong> the details</span></li>
+              <li><Copy aria-hidden="true" size={18} /><span><strong>Copy</strong> clean HTML</span></li>
+            </ol>
+          </section>
+
+          <section className={styles.templateChooser} aria-label="Choose a template">
           <TemplateGallery
             key={selectedTemplate.category}
             templates={templates}
             selectedTemplateId={selectedTemplate.id}
-            onSelect={(templateId) => dispatch(templateSelected(templateId))}
+            onSelect={(templateId) => {
+              dispatch(templateSelected(templateId));
+              setStudioOpen(true);
+            }}
           />
-        </aside>
+          </section>
+        </main>
+      ) : (
+        <main className={styles.workspace}>
+          <section className={styles.canvas} aria-labelledby="workspace-title">
+            <header className={styles.canvasHeader}>
+              <button
+                className={styles.backButton}
+                onClick={() => setStudioOpen(false)}
+                title="Back to templates"
+                type="button"
+              >
+                <ArrowLeft aria-hidden="true" size={17} />
+                <span>Templates</span>
+              </button>
+              <div className={styles.templateMeta}>
+                <p className={styles.sectionLabel}>{selectedTemplate.category}</p>
+                <h2 id="workspace-title">{selectedTemplate.name}</h2>
+                <p>{selectedTemplate.description}</p>
+              </div>
+              <span className={styles.templateId}>{selectedTemplate.id}</span>
+            </header>
 
-        <section className={styles.canvas} aria-labelledby="workspace-title">
-          <header className={styles.canvasHeader}>
-            <div>
-              <p className={styles.sectionLabel}>{selectedTemplate.category}</p>
-              <h2 id="workspace-title">{selectedTemplate.name}</h2>
-              <p>{selectedTemplate.description}</p>
-            </div>
-            <span className={styles.templateId}>{selectedTemplate.id}</span>
-          </header>
+            <PreviewWorkspace
+              key={selectedTemplate.id}
+              canExport={canExport}
+              exportResult={exportResult}
+              exportBlockReasons={exportBlockReasons}
+              onViewportChange={(viewport) => dispatch(viewportChanged(viewport))}
+              previewResult={previewResult}
+              templateId={selectedTemplate.id}
+              viewport={previewViewport}
+            />
+          </section>
 
-          <PreviewWorkspace
-            canExport={canExport}
-            exportResult={exportResult}
-            exportBlockReasons={exportBlockReasons}
-            onViewportChange={(viewport) => dispatch(viewportChanged(viewport))}
-            previewResult={previewResult}
-            templateId={selectedTemplate.id}
-            viewport={previewViewport}
-          />
-        </section>
-
-        <aside className={styles.dataPanel} aria-label="Template editor">
-          <EditorPanel key={selectedTemplate.id} localAssets={localAssets} />
-        </aside>
-      </main>
+          <aside className={styles.dataPanel} aria-label="Template editor">
+            <EditorPanel key={selectedTemplate.id} localAssets={localAssets} />
+          </aside>
+        </main>
+      )}
     </div>
   );
 }

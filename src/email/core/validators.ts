@@ -50,12 +50,18 @@ export function validateEmailUrl(
   const allowed =
     purpose === 'image'
       ? mode === 'preview'
-        ? new Set(['https:', 'http:', 'blob:'])
+        ? new Set(['https:', 'http:', 'blob:', 'data:'])
         : new Set(['https:', 'http:'])
       : new Set(['https:', 'http:', 'mailto:', 'tel:']);
 
   if (!allowed.has(protocol)) {
     return { valid: false, reason: `Protocol ${protocol} is not allowed for ${purpose}.` };
+  }
+  if (
+    protocol === 'data:' &&
+    !/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(candidate)
+  ) {
+    return { valid: false, reason: 'Only supported base64 image data is allowed.' };
   }
   return { valid: true, normalized: candidate };
 }

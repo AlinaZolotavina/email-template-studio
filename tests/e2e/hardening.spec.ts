@@ -1,12 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
 
-declare global {
-  interface Window {
-    __createdObjectUrls: string[];
-    __revokedObjectUrls: string[];
-  }
-}
-
 function collectBrowserErrors(page: Page) {
   const errors: string[] = [];
   page.on('console', (message) => {
@@ -14,6 +7,10 @@ function collectBrowserErrors(page: Page) {
   });
   page.on('pageerror', (error) => errors.push(error.message));
   return errors;
+}
+
+async function openDigest(page: Page) {
+  await page.getByRole('radio', { name: /Weekly digest/ }).click();
 }
 
 test('supports keyboard navigation and visible WCAG AA focus indicators', async ({ page }) => {
@@ -26,6 +23,8 @@ test('supports keyboard navigation and visible WCAG AA focus indicators', async 
   await expect(welcomeTab).toBeFocused();
   await expect(welcomeTab).toHaveAttribute('aria-selected', 'true');
 
+  await page.getByRole('tab', { name: 'Newsletter' }).click();
+  await openDigest(page);
   const desktopTab = page.getByRole('tab', { name: 'Desktop' });
   await desktopTab.focus();
   await desktopTab.press('ArrowRight');
@@ -78,6 +77,7 @@ test('supports keyboard navigation and visible WCAG AA focus indicators', async 
 test('escapes adversarial HTML and rejects executable URL protocols', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.goto('/');
+  await openDigest(page);
 
   const payload = '<img src=x onerror=alert(1)><script>alert(2)</script>';
   await page.getByLabel('Heading').fill(payload);
@@ -106,6 +106,7 @@ test('handles maximum text, extreme colors, and long valid URLs without errors',
 }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.goto('/');
+  await openDigest(page);
 
   const maximumHeading = 'W'.repeat(80);
   await page.getByLabel('Heading').fill(maximumHeading);
@@ -134,51 +135,22 @@ test('handles maximum text, extreme colors, and long valid URLs without errors',
   expect(browserErrors).toEqual([]);
 });
 
-test('revokes replaced, removed, and page-hidden local object URLs', async ({ page }) => {
-  await page.addInitScript(() => {
-    const created: string[] = [];
-    const revoked: string[] = [];
-    const create = URL.createObjectURL.bind(URL);
-    const revoke = URL.revokeObjectURL.bind(URL);
-    Object.assign(window, { __createdObjectUrls: created, __revokedObjectUrls: revoked });
-    URL.createObjectURL = (blob) => {
-      const url = create(blob);
-      created.push(url);
-      return url;
-    };
-    URL.revokeObjectURL = (url) => {
-      revoked.push(url);
-      revoke(url);
-    };
-  });
+test('loads, replaces, and removes a local preview without leaving the app', async ({ page }) => {
+  const browserErrors = collectBrowserErrors(page);
   await page.goto('/');
+  await openDigest(page);
 
   const logo = page.getByRole('group', { name: 'Logo' });
   const fileInput = logo.locator('input[type="file"]');
   await fileInput.setInputFiles('public/template-thumbnails/newsletter-digest.png');
-  await fileInput.setInputFiles('public/template-thumbnails/newsletter-promo.png');
+  await expect(page.getByTitle('Email preview')).toHaveAttribute('srcdoc', /data:image\/png;base64,/);
+  await expect(page.getByRole('heading', { name: 'Weekly digest' })).toBeVisible();
 
-  const afterReplacement = await page.evaluate(() => ({
-    created: window.__createdObjectUrls,
-    revoked: window.__revokedObjectUrls,
-  }));
-  expect(afterReplacement.created).toHaveLength(2);
-  expect(afterReplacement.revoked).toContain(afterReplacement.created[0]);
+  await fileInput.setInputFiles('public/template-thumbnails/newsletter-promo.png');
+  await expect(page.getByTitle('Email preview')).toHaveAttribute('srcdoc', /data:image\/png;base64,/);
 
   await page.getByRole('button', { name: 'Remove local preview for Logo' }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () => window.__revokedObjectUrls.length,
-      ),
-    )
-    .toBe(2);
-
-  await fileInput.setInputFiles('public/template-thumbnails/newsletter-digest.png');
-  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
-  const finalLifecycle = await page.evaluate(() => ({
-    created: window.__createdObjectUrls,
-    revoked: window.__revokedObjectUrls,
-  }));
-  expect(finalLifecycle.revoked).toEqual(expect.arrayContaining(finalLifecycle.created));
+  await expect(page.getByTitle('Email preview')).not.toHaveAttribute('srcdoc', /data:image\/png;base64,/);
+  await expect(page.getByRole('heading', { name: 'Weekly digest' })).toBeVisible();
+  expect(browserErrors).toEqual([]);
 });

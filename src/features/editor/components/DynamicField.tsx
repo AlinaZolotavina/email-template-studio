@@ -15,7 +15,7 @@ interface DynamicFieldProps {
   field: TemplateField;
   value: EmailFieldValue;
   onChange: (value: EmailFieldValue) => void;
-  onImageFile?: (file: File) => void;
+  onImageFile?: (file: File) => void | Promise<void>;
   onRemoveLocalImage?: () => void;
 }
 
@@ -143,13 +143,18 @@ export function DynamicField({
       typeof value.alt === 'string'
         ? value
         : { remoteUrl: '', alt: '' };
-    const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       event.target.value = '';
       if (file === undefined) return;
       const nextError = validateImageFile(file);
       setFileError(nextError);
-      if (nextError === undefined) onImageFile?.(file);
+      if (nextError !== undefined) return;
+      try {
+        await onImageFile?.(file);
+      } catch {
+        setFileError('The selected image could not be read. Try another file.');
+      }
     };
     return (
       <fieldset className={styles.fieldset} aria-describedby={describedBy}>
@@ -182,7 +187,7 @@ export function DynamicField({
             aria-invalid={fileError !== undefined}
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
-            onChange={handleFile}
+            onChange={(event) => void handleFile(event)}
           />
           <label className={styles.fileButton} htmlFor={`${id}-file`}>
             <ImagePlus aria-hidden="true" size={15} /> Local preview

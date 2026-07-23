@@ -11,8 +11,8 @@ import { listTemplates } from '../features/templates/templateRegistry';
 import { createAppStore, type AppStore } from './store';
 import { App } from './App';
 
-function renderApp(store: AppStore = createAppStore()) {
-  return {
+function renderApp(store: AppStore = createAppStore(), openStudio = true) {
+  const result = {
     store,
     ...render(
       <Provider store={store}>
@@ -20,15 +20,28 @@ function renderApp(store: AppStore = createAppStore()) {
       </Provider>,
     ),
   };
+  if (openStudio) {
+    fireEvent.click(screen.getByRole('radio', { name: /Weekly digest/ }));
+  }
+  return result;
 }
 
 describe('App workspace shell', () => {
-  it('renders selected template metadata, live preview, and generated HTML', () => {
-    renderApp();
+  it('renders the promo and category-based template chooser first', () => {
+    renderApp(createAppStore(), false);
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Email Template Studio' }),
     ).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.getByRole('tab', { name: 'Newsletter' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Welcome' })).toBeVisible();
+  });
+
+  it('opens the selected template with live preview and generated HTML', () => {
+    renderApp();
+
     expect(screen.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
     expect(screen.getByDisplayValue('The Weekly Brief')).toBeVisible();
     expect(screen.getByText('newsletter-digest')).toBeVisible();
@@ -43,14 +56,13 @@ describe('App workspace shell', () => {
 
   it('switches category and selects a template', async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderApp(createAppStore(), false);
 
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     expect(screen.getByRole('radio', { name: /Simple welcome/ })).toBeVisible();
     expect(screen.queryByRole('radio', { name: /Weekly digest/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
-    expect(screen.getByRole('radio', { name: /Simple welcome/ })).toBeChecked();
     expect(screen.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
     expect(screen.getByDisplayValue('Welcome aboard!')).toBeVisible();
     expect(within(screen.getByLabelText('Template editor')).getByText('Simple welcome')).toBeVisible();
@@ -68,8 +80,10 @@ describe('App workspace shell', () => {
     );
     renderApp(store);
 
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     await user.click(screen.getByRole('radio', { name: /Onboarding steps/ }));
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
     await user.click(screen.getByRole('tab', { name: 'Newsletter' }));
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
 
@@ -130,7 +144,7 @@ describe('App workspace shell', () => {
   });
 
   it('supports arrow, Home, and End navigation across category tabs', () => {
-    renderApp();
+    renderApp(createAppStore(), false);
     const newsletterTab = screen.getByRole('tab', { name: 'Newsletter' });
     newsletterTab.focus();
 
@@ -147,15 +161,13 @@ describe('App workspace shell', () => {
 
   it('selects and focuses templates with arrow-key navigation', () => {
     const store = createAppStore();
-    renderApp(store);
+    renderApp(store, false);
     const digest = screen.getByRole('radio', { name: /Weekly digest/ });
     digest.focus();
 
     fireEvent.keyDown(digest, { key: 'ArrowDown' });
 
-    const promo = screen.getByRole('radio', { name: /Promotional offer/ });
-    expect(promo).toHaveFocus();
-    expect(promo).toBeChecked();
+    expect(screen.getByRole('heading', { name: 'Promotional offer' })).toBeVisible();
     expect(store.getState().templates.selectedTemplateId).toBe('newsletter-promo');
   });
 });

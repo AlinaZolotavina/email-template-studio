@@ -90,15 +90,18 @@
 }
 
 .frameScroller {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   overflow: auto;
-  padding: 18px;
+  padding: 22px 18px 18px;
+  scroll-padding-top: 22px;
 }
 
 .previewFrame {
   display: block;
   margin: 0 auto;
+  vertical-align: top;
   background: #ffffff;
   border: 0;
   box-shadow: 0 6px 20px rgb(26 40 40 / 16%);
@@ -117,6 +120,7 @@
   font-family: Consolas, "Courier New", monospace;
   font-size: 11px;
   line-height: 1.55;
+  tab-size: 2;
 }
 
 .codeView:focus-visible {

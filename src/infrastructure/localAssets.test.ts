@@ -1,7 +1,7 @@
 import { createLocalAssetsManager } from './localAssets';
 
 describe('local assets manager', () => {
-  it('revokes URLs on replace, remove, template reset, and global teardown', () => {
+  it('revokes URLs on replace, remove, template reset, and global teardown', async () => {
     const api = {
       createObjectURL: vi.fn()
         .mockReturnValueOnce('blob:first')
@@ -13,15 +13,15 @@ describe('local assets manager', () => {
     const manager = createLocalAssetsManager(api);
     const file = new File(['image'], 'logo.png', { type: 'image/png' });
 
-    manager.attach('newsletter-digest', 'logo', file);
-    manager.attach('newsletter-digest', 'logo', file);
+    await manager.attach('newsletter-digest', 'logo', file);
+    await manager.attach('newsletter-digest', 'logo', file);
     expect(api.revokeObjectURL).toHaveBeenCalledWith('blob:first');
 
     manager.release('newsletter-digest', 'logo');
     expect(api.revokeObjectURL).toHaveBeenCalledWith('blob:second');
 
-    manager.attach('newsletter-digest', 'logo', file);
-    manager.attach('welcome-simple', 'logo', file);
+    await manager.attach('newsletter-digest', 'logo', file);
+    await manager.attach('welcome-simple', 'logo', file);
     manager.releaseTemplate('newsletter-digest');
     expect(api.revokeObjectURL).toHaveBeenCalledWith('blob:other');
     expect(api.revokeObjectURL).not.toHaveBeenCalledWith('blob:final');
@@ -30,7 +30,7 @@ describe('local assets manager', () => {
     expect(api.revokeObjectURL).toHaveBeenCalledWith('blob:final');
   });
 
-  it('keeps the previous URL when creating its replacement fails', () => {
+  it('keeps the previous URL when creating its replacement fails', async () => {
     const api = {
       createObjectURL: vi
         .fn()
@@ -43,8 +43,8 @@ describe('local assets manager', () => {
     const manager = createLocalAssetsManager(api);
     const file = new File(['image'], 'logo.png', { type: 'image/png' });
 
-    manager.attach('newsletter-digest', 'logo', file);
-    expect(() => manager.attach('newsletter-digest', 'logo', file)).toThrow(
+    await manager.attach('newsletter-digest', 'logo', file);
+    await expect(manager.attach('newsletter-digest', 'logo', file)).rejects.toThrow(
       'Object URL creation failed',
     );
     expect(api.revokeObjectURL).not.toHaveBeenCalled();

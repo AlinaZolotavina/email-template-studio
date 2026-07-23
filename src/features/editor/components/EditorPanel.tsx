@@ -93,8 +93,8 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
                     field={field}
                     value={valueFor(field.key, field.type)}
                     onChange={(value) => updateField(field.key, value)}
-                    onImageFile={field.type === 'image' ? (file) => {
-                      const localPreviewUrl = localAssets.attach(template.id, field.key, file);
+                    onImageFile={field.type === 'image' ? async (file) => {
+                      const localPreviewUrl = await localAssets.attach(template.id, field.key, file);
                       dispatch(imageLocalPreviewAttached({ templateId: template.id, key: field.key, localPreviewUrl }));
                     } : undefined}
                     onRemoveLocalImage={field.type === 'image' ? () => {

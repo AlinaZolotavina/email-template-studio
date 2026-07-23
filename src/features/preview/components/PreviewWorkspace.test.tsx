@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { RenderResult } from '../../../email/types';
 import { PREVIEW_DIMENSIONS } from '../previewDimensions';
 import type { PreviewViewport } from '../previewSlice';
+import { formatHtml } from '../formatHtml';
 import { PreviewWorkspace } from './PreviewWorkspace';
 
 const previewResult: RenderResult = {
@@ -44,7 +45,7 @@ describe('PreviewWorkspace', () => {
     expect(frame).toHaveAttribute('height', String(PREVIEW_DIMENSIONS.desktop.height));
 
     const code = screen.getByLabelText<HTMLTextAreaElement>('Generated HTML');
-    expect(code).toHaveValue(exportResult.html);
+    expect(code).toHaveValue(formatHtml(exportResult.html));
     expect(code).toHaveAttribute('readonly');
     expect(code.value).not.toContain('blob:');
   });
@@ -139,14 +140,14 @@ describe('PreviewWorkspace', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy HTML' }));
-    expect(copyService).toHaveBeenCalledWith(exportResult.html);
+    expect(copyService).toHaveBeenCalledWith(formatHtml(exportResult.html));
     expect(await screen.findByRole('status')).toHaveTextContent(
       'HTML copied to clipboard.',
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Download .html' }));
     expect(downloadService).toHaveBeenCalledWith(
-      exportResult.html,
+      formatHtml(exportResult.html),
       'newsletter-digest',
     );
     expect(screen.getByRole('status')).toHaveTextContent(

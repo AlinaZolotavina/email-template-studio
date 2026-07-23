@@ -1,5 +1,5 @@
 import { Code2, Copy, Download, Monitor, Smartphone } from 'lucide-react';
-import { useState, type KeyboardEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 
 import type { RenderIssue, RenderResult } from '../../../email/types';
 import { copyText, type CopyResult } from '../../../infrastructure/clipboard';
@@ -8,6 +8,7 @@ import {
   type DownloadResult,
 } from '../../../infrastructure/download';
 import type { PreviewViewport } from '../previewSlice';
+import { formatHtml } from '../formatHtml';
 import { EmailPreviewFrame } from './EmailPreviewFrame';
 import styles from './PreviewWorkspace.module.css';
 
@@ -56,14 +57,15 @@ export function PreviewWorkspace({
   downloadService = downloadHtml,
 }: PreviewWorkspaceProps) {
   const [copyPending, setCopyPending] = useState(false);
+  const formattedHtml = useMemo(() => formatHtml(exportResult.html), [exportResult.html]);
   const [feedback, setFeedback] = useState<
     { html: string; kind: 'success' | 'error'; message: string } | undefined
   >();
   const visibleFeedback =
-    feedback?.html === exportResult.html ? feedback : undefined;
+    feedback?.html === formattedHtml ? feedback : undefined;
 
   const handleCopy = async () => {
-    const html = exportResult.html;
+    const html = formattedHtml;
     setCopyPending(true);
     setFeedback(undefined);
     try {
@@ -89,7 +91,7 @@ export function PreviewWorkspace({
   };
 
   const handleDownload = () => {
-    const html = exportResult.html;
+    const html = formattedHtml;
     setFeedback(undefined);
     try {
       const result = downloadService(html, templateId);
@@ -212,7 +214,7 @@ export function PreviewWorkspace({
           className={styles.codeView}
           readOnly
           spellCheck={false}
-          value={exportResult.html}
+          value={formattedHtml}
           wrap="off"
         />
         <footer className={styles.exportFooter}>
