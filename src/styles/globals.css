@@ -22,3 +22,12 @@ textarea,
 select {
   font: inherit;
 }
+
+@media (min-width: 1081px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}

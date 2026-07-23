@@ -2,6 +2,8 @@ import { LayoutTemplate } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 
 import { EditorPanel } from '../features/editor/components/EditorPanel';
+import { PreviewWorkspace } from '../features/preview/components/PreviewWorkspace';
+import { viewportChanged } from '../features/preview/previewSlice';
 import { TemplateGallery } from '../features/templates/components/TemplateGallery';
 import { listTemplates } from '../features/templates/templateRegistry';
 import { templateSelected } from '../features/templates/templatesSlice';
@@ -10,7 +12,11 @@ import {
   type LocalAssetsManager,
 } from '../infrastructure/localAssets';
 import { useAppDispatch, useAppSelector } from './hooks';
-import { selectSelectedTemplateDefinition } from './selectors';
+import {
+  selectExportRenderResult,
+  selectPreviewRenderResult,
+  selectSelectedTemplateDefinition,
+} from './selectors';
 import styles from './App.module.css';
 
 const templates = listTemplates();
@@ -18,6 +24,9 @@ const templates = listTemplates();
 export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalAssetsManager }) {
   const dispatch = useAppDispatch();
   const selectedTemplate = useAppSelector(selectSelectedTemplateDefinition);
+  const previewResult = useAppSelector(selectPreviewRenderResult);
+  const exportResult = useAppSelector(selectExportRenderResult);
+  const previewViewport = useAppSelector((state) => state.preview.viewport);
   const localAssets = useMemo(
     () => providedLocalAssets ?? createBrowserLocalAssetsManager(),
     [providedLocalAssets],
@@ -62,12 +71,12 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
             <span className={styles.templateId}>{selectedTemplate.id}</span>
           </header>
 
-          <div className={styles.visualStage} data-testid="selected-template-visual">
-            <img
-              src={`${import.meta.env.BASE_URL}${selectedTemplate.thumbnailPath}`}
-              alt={`${selectedTemplate.name} email template preview`}
-            />
-          </div>
+          <PreviewWorkspace
+            exportResult={exportResult}
+            onViewportChange={(viewport) => dispatch(viewportChanged(viewport))}
+            previewResult={previewResult}
+            viewport={previewViewport}
+          />
         </section>
 
         <aside className={styles.dataPanel} aria-label="Template editor">

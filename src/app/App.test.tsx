@@ -20,7 +20,7 @@ function renderApp(store: AppStore = createAppStore()) {
 }
 
 describe('App workspace shell', () => {
-  it('renders the selected template metadata, draft, and raster visual', () => {
+  it('renders selected template metadata, live preview, and generated HTML', () => {
     renderApp();
 
     expect(
@@ -29,11 +29,13 @@ describe('App workspace shell', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
     expect(screen.getByDisplayValue('The Weekly Brief')).toBeVisible();
     expect(screen.getByText('newsletter-digest')).toBeVisible();
+    expect(screen.getByTitle('Email preview')).toHaveAttribute(
+      'srcdoc',
+      expect.stringContaining('The Weekly Brief'),
+    );
     expect(
-      within(screen.getByTestId('selected-template-visual')).getByAltText(
-        'Weekly digest email template preview',
-      ),
-    ).toHaveAttribute('src', expect.stringContaining('newsletter-digest.png'));
+      screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,
+    ).toContain('The Weekly Brief');
   });
 
   it('switches category and selects a template', async () => {
@@ -69,6 +71,38 @@ describe('App workspace shell', () => {
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
 
     expect(screen.getByDisplayValue('Edited digest heading')).toBeVisible();
+  });
+
+  it('updates preview srcDoc and export code in the same editor update', async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.clear(screen.getByLabelText('Heading'));
+    await user.type(screen.getByLabelText('Heading'), 'Synchronized heading');
+
+    expect(screen.getByTitle('Email preview')).toHaveAttribute(
+      'srcdoc',
+      expect.stringContaining('Synchronized heading'),
+    );
+    expect(
+      screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,
+    ).toContain('Synchronized heading');
+  });
+
+  it('changes the preview viewport without changing either rendered document', async () => {
+    const user = userEvent.setup();
+    const { store } = renderApp();
+    const frame = screen.getByTitle('Email preview');
+    const previewHtml = frame.getAttribute('srcdoc');
+    const exportHtml =
+      screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value;
+
+    await user.click(screen.getByRole('tab', { name: 'Mobile' }));
+
+    expect(store.getState().preview.viewport).toBe('mobile');
+    expect(frame).toHaveAttribute('width', '375');
+    expect(frame).toHaveAttribute('srcdoc', previewHtml);
+    expect(screen.getByLabelText('Generated HTML')).toHaveValue(exportHtml);
   });
 
   it('supports arrow, Home, and End navigation across category tabs', () => {
