@@ -28,9 +28,21 @@ import styles from './App.module.css';
 
 const templates = listTemplates();
 
+type AppRoute =
+  | { view: 'templates' }
+  | { view: 'studio'; templateId: (typeof templates)[number]['id'] };
+
+function readRoute(): AppRoute {
+  const match = /^#\/studio\/([^/]+)$/.exec(window.location.hash);
+  const template = templates.find((candidate) => candidate.id === match?.[1]);
+  return template === undefined
+    ? { view: 'templates' }
+    : { view: 'studio', templateId: template.id };
+}
+
 export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalAssetsManager }) {
   const dispatch = useAppDispatch();
-  const [studioOpen, setStudioOpen] = useState(false);
+  const [route, setRoute] = useState<AppRoute>(readRoute);
   const selectedTemplate = useAppSelector(selectSelectedTemplateDefinition);
   const previewResult = useAppSelector(selectPreviewRenderResult);
   const exportResult = useAppSelector(selectExportRenderResult);
@@ -50,6 +62,34 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
       localAssets.releaseAll();
     };
   }, [localAssets]);
+
+  useEffect(() => {
+    const syncRoute = () => {
+      const nextRoute = readRoute();
+      setRoute(nextRoute);
+      if (nextRoute.view === 'studio') {
+        dispatch(templateSelected(nextRoute.templateId));
+      }
+    };
+
+    if (window.location.hash === '') {
+      window.history.replaceState(null, '', '#/templates');
+    }
+    syncRoute();
+    window.addEventListener('hashchange', syncRoute);
+    return () => window.removeEventListener('hashchange', syncRoute);
+  }, [dispatch]);
+
+  const navigate = (nextRoute: AppRoute) => {
+    const hash =
+      nextRoute.view === 'studio'
+        ? `#/studio/${nextRoute.templateId}`
+        : '#/templates';
+    setRoute(nextRoute);
+    window.location.hash = hash;
+  };
+
+  const studioOpen = route.view === 'studio';
 
   return (
     <div className={styles.appShell}>
@@ -81,7 +121,7 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
             selectedTemplateId={selectedTemplate.id}
             onSelect={(templateId) => {
               dispatch(templateSelected(templateId));
-              setStudioOpen(true);
+              navigate({ view: 'studio', templateId });
             }}
           />
           </section>
@@ -92,7 +132,7 @@ export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalA
             <header className={styles.canvasHeader}>
               <button
                 className={styles.backButton}
-                onClick={() => setStudioOpen(false)}
+                onClick={() => navigate({ view: 'templates' })}
                 title="Back to templates"
                 type="button"
               >

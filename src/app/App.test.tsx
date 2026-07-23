@@ -11,6 +11,10 @@ import { listTemplates } from '../features/templates/templateRegistry';
 import { createAppStore, type AppStore } from './store';
 import { App } from './App';
 
+beforeEach(() => {
+  window.history.replaceState(null, '', '/');
+});
+
 function renderApp(store: AppStore = createAppStore(), openStudio = true) {
   const result = {
     store,
@@ -52,6 +56,7 @@ describe('App workspace shell', () => {
     expect(
       screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,
     ).toContain('The Weekly Brief');
+    expect(window.location.hash).toBe('#/studio/newsletter-digest');
   });
 
   it('switches category and selects a template', async () => {
@@ -64,8 +69,20 @@ describe('App workspace shell', () => {
 
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
     expect(screen.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
+    expect(window.location.hash).toBe('#/studio/welcome-simple');
     expect(screen.getByDisplayValue('Welcome aboard!')).toBeVisible();
     expect(within(screen.getByLabelText('Template editor')).getByText('Simple welcome')).toBeVisible();
+  });
+
+  it('opens a routed template directly and returns to the catalogue', async () => {
+    window.history.replaceState(null, '', '#/studio/welcome-onboarding');
+    const user = userEvent.setup();
+    renderApp(createAppStore(), false);
+
+    expect(screen.getByRole('heading', { name: 'Onboarding steps' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    expect(window.location.hash).toBe('#/templates');
+    expect(screen.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
   });
 
   it('keeps an edited draft when the user switches away and back', async () => {
@@ -117,8 +134,8 @@ describe('App workspace shell', () => {
     await user.click(screen.getByRole('tab', { name: 'Mobile' }));
 
     expect(store.getState().preview.viewport).toBe('mobile');
-    expect(frame).toHaveAttribute('width', '375');
-    expect(frame).toHaveAttribute('srcdoc', previewHtml);
+    expect(screen.getByTitle('Email preview')).toHaveAttribute('width', '375');
+    expect(screen.getByTitle('Email preview')).toHaveAttribute('srcdoc', previewHtml);
     expect(screen.getByLabelText('Generated HTML')).toHaveValue(exportHtml);
   });
 

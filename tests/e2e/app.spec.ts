@@ -17,6 +17,7 @@ test('selects a template in the workspace shell', async ({ page }) => {
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
 
+  await expect(page).toHaveURL(/#\/studio\/welcome-simple$/);
   await expect(page.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
   await expect(page.getByLabel('Greeting')).toHaveValue('Welcome aboard!');
   await expect(page.getByTitle('Email preview')).toHaveAttribute(
@@ -72,7 +73,7 @@ test('switches viewport dimensions without changing generated HTML', async ({ pa
   await page.getByRole('tab', { name: 'Mobile' }).click();
 
   await expect(frame).toHaveAttribute('width', '375');
-  await expect(frame).toHaveAttribute('height', '560');
+  expect(Number(await frame.getAttribute('height'))).toBeGreaterThanOrEqual(560);
   expect(await frame.getAttribute('srcdoc')).toBe(previewHtml);
   expect(await page.getByLabel('Generated HTML').inputValue()).toBe(exportHtml);
 });
@@ -96,8 +97,8 @@ test('restores the selected template, draft, and viewport after refresh', async 
     .toBe(true);
 
   await page.reload();
-  await openDigest(page);
 
+  await expect(page).toHaveURL(/#\/studio\/newsletter-digest$/);
   await expect(page.getByLabel('Heading')).toHaveValue('Persisted browser draft');
   await expect(page.getByRole('tab', { name: 'Mobile' })).toHaveAttribute(
     'aria-selected',

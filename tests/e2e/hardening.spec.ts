@@ -142,9 +142,14 @@ test('loads, replaces, and removes a local preview without leaving the app', asy
 
   const logo = page.getByRole('group', { name: 'Logo' });
   const fileInput = logo.locator('input[type="file"]');
-  await fileInput.setInputFiles('public/template-thumbnails/newsletter-digest.png');
+  const initialWindowScroll = await page.evaluate(() => window.scrollY);
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await fileInput.click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles('public/template-thumbnails/newsletter-digest.png');
   await expect(page.getByTitle('Email preview')).toHaveAttribute('srcdoc', /data:image\/png;base64,/);
   await expect(page.getByRole('heading', { name: 'Weekly digest' })).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(initialWindowScroll);
 
   await fileInput.setInputFiles('public/template-thumbnails/newsletter-promo.png');
   await expect(page.getByTitle('Email preview')).toHaveAttribute('srcdoc', /data:image\/png;base64,/);
@@ -153,4 +158,38 @@ test('loads, replaces, and removes a local preview without leaving the app', asy
   await expect(page.getByTitle('Email preview')).not.toHaveAttribute('srcdoc', /data:image\/png;base64,/);
   await expect(page.getByRole('heading', { name: 'Weekly digest' })).toBeVisible();
   expect(browserErrors).toEqual([]);
+});
+
+test('uses one preview scrollbar and keeps the email aligned to the top', async ({ page }) => {
+  await page.goto('/');
+  await openDigest(page);
+
+  const frame = page.getByTitle('Email preview');
+  await expect
+    .poll(() =>
+      frame.evaluate((element) => {
+        const iframe = element as HTMLIFrameElement;
+        const documentHeight =
+          iframe.contentDocument?.documentElement.scrollHeight ?? 0;
+        return documentHeight > 0 && iframe.clientHeight >= documentHeight;
+      }),
+    )
+    .toBe(true);
+
+  const measurements = await frame.evaluate((element) => {
+    const iframe = element as HTMLIFrameElement;
+    const heading = iframe.contentDocument?.querySelector('h1');
+    return {
+      frameHeight: iframe.clientHeight,
+      documentHeight: iframe.contentDocument?.documentElement.scrollHeight ?? 0,
+      headingTop: heading?.getBoundingClientRect().top ?? -1,
+      scrolling: iframe.getAttribute('scrolling'),
+      outerScrollTop: iframe.parentElement?.scrollTop ?? -1,
+    };
+  });
+
+  expect(measurements.scrolling).toBe('no');
+  expect(measurements.frameHeight).toBeGreaterThanOrEqual(measurements.documentHeight);
+  expect(measurements.headingTop).toBeGreaterThanOrEqual(0);
+  expect(measurements.outerScrollTop).toBe(0);
 });

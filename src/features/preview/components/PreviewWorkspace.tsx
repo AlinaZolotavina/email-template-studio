@@ -197,7 +197,7 @@ export function PreviewWorkspace({
           id="email-preview-panel"
           role="tabpanel"
         >
-          <EmailPreviewFrame html={previewResult.html} viewport={viewport} />
+          <EmailPreviewFrame key={viewport} html={previewResult.html} viewport={viewport} />
         </div>
       </section>
 

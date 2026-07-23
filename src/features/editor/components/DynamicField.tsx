@@ -180,18 +180,20 @@ export function DynamicField({
           onChange={(event) => onChange({ ...image, alt: event.target.value })}
         />
         <div className={styles.fileRow}>
-          <input
-            id={`${id}-file`}
-            className={styles.visuallyHidden}
-            aria-describedby={describedBy}
-            aria-invalid={fileError !== undefined}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            onChange={(event) => void handleFile(event)}
-          />
-          <label className={styles.fileButton} htmlFor={`${id}-file`}>
-            <ImagePlus aria-hidden="true" size={15} /> Local preview
-          </label>
+          <span className={styles.filePicker}>
+            <input
+              id={`${id}-file`}
+              className={styles.fileInput}
+              aria-describedby={describedBy}
+              aria-invalid={fileError !== undefined}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={(event) => void handleFile(event)}
+            />
+            <label className={styles.fileButton} htmlFor={`${id}-file`}>
+              <ImagePlus aria-hidden="true" size={15} /> Local preview
+            </label>
+          </span>
           {image.localPreviewUrl && (
             <button
               type="button"

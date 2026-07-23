@@ -101,6 +101,7 @@
 .previewFrame {
   display: block;
   margin: 0 auto;
+  overflow: hidden;
   vertical-align: top;
   background: #ffffff;
   border: 0;

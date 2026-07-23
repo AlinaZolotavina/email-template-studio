@@ -6,6 +6,10 @@ import { App } from '../../../app/App';
 import { createAppStore } from '../../../app/store';
 import type { LocalAssetsManager } from '../../../infrastructure/localAssets';
 
+beforeEach(() => {
+  window.history.replaceState(null, '', '/');
+});
+
 function createAssetsMock(): LocalAssetsManager {
   return {
     attach: vi.fn(() => Promise.resolve('blob:local-logo')),

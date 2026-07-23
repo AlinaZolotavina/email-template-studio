@@ -39,7 +39,8 @@ describe('PreviewWorkspace', () => {
     render(<StatefulWorkspace />);
 
     const frame = screen.getByTitle('Email preview');
-    expect(frame).toHaveAttribute('sandbox', '');
+    expect(frame).toHaveAttribute('sandbox', 'allow-same-origin');
+    expect(frame).toHaveAttribute('scrolling', 'no');
     expect(frame).toHaveAttribute('srcdoc', previewResult.html);
     expect(frame).toHaveAttribute('width', String(PREVIEW_DIMENSIONS.desktop.width));
     expect(frame).toHaveAttribute('height', String(PREVIEW_DIMENSIONS.desktop.height));
