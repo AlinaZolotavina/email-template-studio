@@ -27,7 +27,7 @@ describe('App workspace shell', () => {
       screen.getByRole('heading', { level: 1, name: 'Email Template Studio' }),
     ).toBeVisible();
     expect(screen.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
-    expect(screen.getByText('The Weekly Brief')).toBeVisible();
+    expect(screen.getByDisplayValue('The Weekly Brief')).toBeVisible();
     expect(screen.getByText('newsletter-digest')).toBeVisible();
     expect(
       within(screen.getByTestId('selected-template-visual')).getByAltText(
@@ -47,8 +47,8 @@ describe('App workspace shell', () => {
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
     expect(screen.getByRole('radio', { name: /Simple welcome/ })).toBeChecked();
     expect(screen.getByRole('heading', { level: 2, name: 'Simple welcome' })).toBeVisible();
-    expect(screen.getByText('Welcome aboard!')).toBeVisible();
-    expect(within(screen.getByLabelText('Selected template data')).getByText('welcome')).toBeVisible();
+    expect(screen.getByDisplayValue('Welcome aboard!')).toBeVisible();
+    expect(within(screen.getByLabelText('Template editor')).getByText('Simple welcome')).toBeVisible();
   });
 
   it('keeps an edited draft when the user switches away and back', async () => {
@@ -68,7 +68,7 @@ describe('App workspace shell', () => {
     await user.click(screen.getByRole('tab', { name: 'Newsletter' }));
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
 
-    expect(screen.getByText('Edited digest heading')).toBeVisible();
+    expect(screen.getByDisplayValue('Edited digest heading')).toBeVisible();
   });
 
   it('supports arrow, Home, and End navigation across category tabs', () => {

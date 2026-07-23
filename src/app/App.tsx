@@ -1,33 +1,36 @@
-import { FileText, LayoutTemplate } from 'lucide-react';
+import { LayoutTemplate } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 
-import type { EmailFieldValue } from '../email/types';
+import { EditorPanel } from '../features/editor/components/EditorPanel';
 import { TemplateGallery } from '../features/templates/components/TemplateGallery';
 import { listTemplates } from '../features/templates/templateRegistry';
 import { templateSelected } from '../features/templates/templatesSlice';
-import { useAppDispatch, useAppSelector } from './hooks';
 import {
-  selectSelectedDraft,
-  selectSelectedTemplateDefinition,
-} from './selectors';
+  createBrowserLocalAssetsManager,
+  type LocalAssetsManager,
+} from '../infrastructure/localAssets';
+import { useAppDispatch, useAppSelector } from './hooks';
+import { selectSelectedTemplateDefinition } from './selectors';
 import styles from './App.module.css';
 
 const templates = listTemplates();
 
-function formatFieldValue(value: EmailFieldValue): string {
-  if (typeof value === 'boolean') return value ? 'Enabled' : 'Disabled';
-  if (typeof value === 'string') return value || 'Not set';
-  if ('label' in value) return value.label || value.url || 'Not set';
-  return value.alt || value.remoteUrl || 'Not set';
-}
-
-export function App() {
+export function App({ localAssets: providedLocalAssets }: { localAssets?: LocalAssetsManager }) {
   const dispatch = useAppDispatch();
   const selectedTemplate = useAppSelector(selectSelectedTemplateDefinition);
-  const selectedDraft = useAppSelector(selectSelectedDraft);
+  const localAssets = useMemo(
+    () => providedLocalAssets ?? createBrowserLocalAssetsManager(),
+    [providedLocalAssets],
+  );
 
-  const visibleFields = selectedTemplate.fields
-    .filter((field) => field.type !== 'color')
-    .slice(0, 8);
+  useEffect(() => {
+    const releaseAll = () => localAssets.releaseAll();
+    window.addEventListener('pagehide', releaseAll);
+    return () => {
+      window.removeEventListener('pagehide', releaseAll);
+      localAssets.releaseAll();
+    };
+  }, [localAssets]);
 
   return (
     <div className={styles.appShell}>
@@ -67,77 +70,8 @@ export function App() {
           </div>
         </section>
 
-        <aside className={styles.dataPanel} aria-label="Selected template data">
-          <header className={styles.panelHeader}>
-            <FileText aria-hidden="true" size={17} />
-            <h2>Draft data</h2>
-          </header>
-
-          <dl className={styles.metadata}>
-            <div>
-              <dt>Template</dt>
-              <dd>{selectedTemplate.name}</dd>
-            </div>
-            <div>
-              <dt>Category</dt>
-              <dd>{selectedTemplate.category}</dd>
-            </div>
-            <div>
-              <dt>Schema</dt>
-              <dd>v{selectedDraft.schemaVersion}</dd>
-            </div>
-            <div>
-              <dt>Editable fields</dt>
-              <dd>{selectedTemplate.fields.length}</dd>
-            </div>
-          </dl>
-
-          <section className={styles.themeSection} aria-labelledby="theme-heading">
-            <h3 id="theme-heading">Theme</h3>
-            <div className={styles.swatches}>
-              <span
-                className={styles.swatch}
-                style={{ backgroundColor: selectedDraft.theme.backgroundColor }}
-                role="img"
-                aria-label={`Background ${selectedDraft.theme.backgroundColor}`}
-                title={`Background ${selectedDraft.theme.backgroundColor}`}
-              />
-              <span
-                className={styles.swatch}
-                style={{ backgroundColor: selectedDraft.theme.surfaceColor }}
-                role="img"
-                aria-label={`Surface ${selectedDraft.theme.surfaceColor}`}
-                title={`Surface ${selectedDraft.theme.surfaceColor}`}
-              />
-              <span
-                className={styles.swatch}
-                style={{ backgroundColor: selectedDraft.theme.textColor }}
-                role="img"
-                aria-label={`Text ${selectedDraft.theme.textColor}`}
-                title={`Text ${selectedDraft.theme.textColor}`}
-              />
-              <span
-                className={styles.swatch}
-                style={{ backgroundColor: selectedDraft.theme.accentColor }}
-                role="img"
-                aria-label={`Accent ${selectedDraft.theme.accentColor}`}
-                title={`Accent ${selectedDraft.theme.accentColor}`}
-              />
-            </div>
-            <p>{selectedDraft.theme.fontFamily}, {selectedDraft.theme.contentWidth}px</p>
-          </section>
-
-          <section className={styles.contentSection} aria-labelledby="content-heading">
-            <h3 id="content-heading">Content</h3>
-            <dl className={styles.fieldList}>
-              {visibleFields.map((field) => (
-                <div key={field.key}>
-                  <dt>{field.label}</dt>
-                  <dd>{formatFieldValue(selectedDraft.fields[field.key] ?? '')}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+        <aside className={styles.dataPanel} aria-label="Template editor">
+          <EditorPanel key={selectedTemplate.id} localAssets={localAssets} />
         </aside>
       </main>
     </div>
