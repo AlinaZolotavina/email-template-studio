@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const SESSION_STORAGE_KEY = 'email-template-studio:session:v1';
+
 test('selects a template in the workspace shell', async ({ page }) => {
   await page.goto('/');
 
@@ -67,6 +69,53 @@ test('switches viewport dimensions without changing generated HTML', async ({ pa
   await expect(frame).toHaveAttribute('height', '560');
   expect(await frame.getAttribute('srcdoc')).toBe(previewHtml);
   expect(await page.getByLabel('Generated HTML').inputValue()).toBe(exportHtml);
+});
+
+test('restores the selected template, draft, and viewport after refresh', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Heading').fill('Persisted browser draft');
+  await page.getByRole('tab', { name: 'Mobile' }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((key) => {
+        const stored = sessionStorage.getItem(key);
+        return (
+          stored?.includes('Persisted browser draft') === true &&
+          stored.includes('"previewViewport":"mobile"')
+        );
+      }, SESSION_STORAGE_KEY),
+    )
+    .toBe(true);
+
+  await page.reload();
+
+  await expect(page.getByLabel('Heading')).toHaveValue('Persisted browser draft');
+  await expect(page.getByRole('tab', { name: 'Mobile' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByTitle('Email preview')).toHaveAttribute(
+    'srcdoc',
+    /Persisted browser draft/,
+  );
+});
+
+test('keeps drafts isolated while switching between templates', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Heading').fill('Digest-only heading');
+
+  await page.getByRole('tab', { name: 'Welcome' }).click();
+  await page.getByRole('radio', { name: /Simple welcome/ }).click();
+  await page.getByLabel('Greeting').fill('Welcome-only greeting');
+
+  await page.getByRole('tab', { name: 'Newsletter' }).click();
+  await page.getByRole('radio', { name: /Weekly digest/ }).click();
+  await expect(page.getByLabel('Heading')).toHaveValue('Digest-only heading');
+
+  await page.getByRole('tab', { name: 'Welcome' }).click();
+  await page.getByRole('radio', { name: /Simple welcome/ }).click();
+  await expect(page.getByLabel('Greeting')).toHaveValue('Welcome-only greeting');
 });
 
 test('blocks local-only images, then copies and downloads the exact export HTML', async ({
