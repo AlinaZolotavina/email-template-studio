@@ -13,7 +13,8 @@
     "test:run": "vitest run",
     "test:e2e": "playwright test",
     "fixtures:email": "node scripts/generate-email-fixtures.mjs",
-    "fixtures:email:check": "node scripts/generate-email-fixtures.mjs --check"
+    "fixtures:email:check": "node scripts/generate-email-fixtures.mjs --check",
+    "smoke:release": "node scripts/smoke-release.mjs"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
