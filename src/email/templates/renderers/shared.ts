@@ -2,6 +2,7 @@ import { emailDraftSchema } from '../../schemas';
 import type {
   ArticleValue,
   BenefitValue,
+  ButtonValue,
   EmailDraft,
   EmailFieldValue,
   ImageValue,
@@ -38,16 +39,17 @@ export interface RenderSession {
   benefits(key: string): BenefitValue[];
   links(key: string): LinkValue[];
   link(key: string): LinkValue;
+  buttonValue(key: string): ButtonValue;
   image(key: string): ImageValue;
   optionalImage(key: string, width: number, height?: number): EmailHtml | null;
   optionalImageValue(key: string, value: ImageValue, width: number, height?: number): EmailHtml | null;
   textLink(key: string, value: LinkValue, color?: string, fontSize?: number): EmailHtml | null;
-  button(key: string, value: LinkValue): EmailHtml | null;
+  button(key: string, value: ButtonValue): EmailHtml | null;
 }
 
 type BodyRenderer = (session: RenderSession) => EmailHtml;
 
-function isObject(value: EmailFieldValue | undefined): value is LinkValue | ImageValue {
+function isObject(value: EmailFieldValue | undefined): value is LinkValue | ButtonValue | ImageValue {
   return typeof value === 'object' && value !== null;
 }
 
@@ -103,6 +105,19 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     if (isObject(value) && 'label' in value && 'url' in value) return value;
     fieldError(errors, key, 'a link');
     return { label: '', url: '' };
+  };
+
+  const buttonValue = (key: string): ButtonValue => {
+    const value = draft.fields[key];
+    if (
+      isObject(value) &&
+      'label' in value &&
+      'url' in value &&
+      'backgroundColor' in value &&
+      'textColor' in value
+    ) return value;
+    fieldError(errors, key, 'button settings');
+    return { label: '', url: '', backgroundColor: '#000000', textColor: '#FFFFFF' };
   };
 
   const image = (key: string): ImageValue => {
@@ -177,7 +192,7 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     });
   };
 
-  const button = (key: string, value: LinkValue): EmailHtml | null => {
+  const button = (key: string, value: ButtonValue): EmailHtml | null => {
     const validation = validateEmailUrl(value.url, 'link');
     if (!validation.valid) {
       errors.push({
@@ -198,8 +213,8 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     return bulletproofButton({
       label: value.label,
       url: value.url,
-      backgroundColor: draft.theme.accentColor,
-      textColor: draft.theme.buttonTextColor,
+      backgroundColor: value.backgroundColor,
+      textColor: value.textColor,
       fontFamily: draft.theme.fontFamily,
       borderRadius: 6,
     });
@@ -216,6 +231,7 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     benefits,
     links,
     link,
+    buttonValue,
     image,
     optionalImage,
     optionalImageValue,
@@ -421,7 +437,7 @@ export function paragraphRow(session: RenderSession, text: string): EmailHtml {
 }
 
 export function ctaRow(session: RenderSession, key = 'primaryCta'): EmailHtml | null {
-  const button = session.button(key, session.link(key));
+  const button = session.button(key, session.buttonValue(key));
   if (button === null) return null;
   return tableCell({
     children: button,

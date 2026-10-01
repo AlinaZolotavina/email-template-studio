@@ -149,8 +149,8 @@ export const renderNewsletterPromo = createTemplateRenderer(
             padding: [0, 48, 20, 48],
           },
         }) : null,
-        session.boolean('showFooter') ? linkValuesRow(session, 'footerLinks', 11) : null,
-        session.boolean('showFooter') ? tableCell({
+        session.boolean('showFooter') && session.boolean('showSocialLinks') ? linkValuesRow(session, 'socialLinks', 11) : null,
+        session.boolean('showFooter') && session.boolean('showFooterText') ? tableCell({
           children: emailText({
             text: session.string('footerText'),
             style: {
@@ -165,6 +165,7 @@ export const renderNewsletterPromo = createTemplateRenderer(
           align: 'center',
           style: { padding: [10, 32, 0, 32] },
         }) : null,
+        session.boolean('showFooter') && session.boolean('showLegalLinks') ? linkValuesRow(session, 'legalLinks', 10) : null,
         session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('address'),

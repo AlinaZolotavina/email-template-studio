@@ -47,13 +47,6 @@ export const THEME_COLOR_FIELDS = [
     group: 'brand',
     themeKey: 'accentColor',
   },
-  {
-    key: 'theme.buttonTextColor',
-    type: 'color',
-    label: 'Button text color',
-    group: 'brand',
-    themeKey: 'buttonTextColor',
-  },
 ] as const satisfies readonly TemplateField[];
 
 export const THEME_COLOR_FIELD_KEYS = THEME_COLOR_FIELDS.map(({ key }) => key);

@@ -68,7 +68,8 @@ describe('EditorPanel integration', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Show article images' }));
 
     await expandSection(user, 'Footer');
-    const preferences = screen.getByRole('group', { name: 'Link 4' });
+    const legalLinks = screen.getByRole('group', { name: 'Legal links' });
+    const preferences = within(legalLinks).getByRole('group', { name: 'Link 1' });
     await user.clear(within(preferences).getByLabelText('Label'));
     await user.type(within(preferences).getByLabelText('Label'), 'Email settings');
     await user.clear(within(preferences).getByLabelText('URL'));
@@ -82,7 +83,7 @@ describe('EditorPanel integration', () => {
     );
     expect(draft?.theme.backgroundColor).toBe('#123456');
     expect(draft?.fields.showArticleImages).toBe(false);
-    expect(Array.isArray(draft?.fields.footerLinks) && draft.fields.footerLinks[3]).toEqual({ label: 'Email settings', url: 'https://company.test/preferences' });
+    expect(Array.isArray(draft?.fields.legalLinks) && draft.fields.legalLinks[0]).toEqual({ label: 'Email settings', url: 'https://company.test/preferences' });
   }, 20_000);
 
   it('keeps invalid color out of Redux', async () => {
@@ -204,15 +205,47 @@ describe('EditorPanel integration', () => {
     expect(Array.isArray(digest?.fields.articles) && digest.fields.articles).toHaveLength(6);
 
     await expandSection(user, 'Footer');
-    await user.click(screen.getByRole('button', { name: 'Remove link 1' }));
-    await user.click(screen.getByRole('button', { name: 'Add link' }));
-    expect(Array.isArray(digest?.fields.footerLinks) && digest.fields.footerLinks).toHaveLength(5);
+    const socialLinks = screen.getByRole('group', { name: 'Social links' });
+    await user.click(within(socialLinks).getByRole('button', { name: 'Remove link 1' }));
+    await user.click(within(socialLinks).getByRole('button', { name: 'Add link' }));
+    expect(Array.isArray(digest?.fields.socialLinks) && digest.fields.socialLinks).toHaveLength(3);
+
+    await user.click(screen.getByRole('button', { name: 'Remove Delivery notice' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Social links' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Legal links' }));
+    const updatedDigest = store.getState().editor.draftsByTemplateId['newsletter-digest'];
+    expect(updatedDigest?.fields.showFooterText).toBe(false);
+    expect(updatedDigest?.fields.showSocialLinks).toBe(false);
+    expect(updatedDigest?.fields.showLegalLinks).toBe(false);
 
     await user.click(screen.getByRole('button', { name: 'Remove Preheader' }));
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.showPreheader).toBe(false);
     expect(screen.queryByRole('textbox', { name: 'Preheader' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add Preheader' }));
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.showPreheader).toBe(true);
+  }, 20_000);
+
+  it('edits button colors and manages onboarding steps as repeated items', async () => {
+    const user = userEvent.setup();
+    const { store } = renderEditor();
+    const button = screen.getByRole('group', { name: 'Primary button' });
+    await user.clear(within(button).getByLabelText('Button color HEX'));
+    await user.type(within(button).getByLabelText('Button color HEX'), '#123456');
+    await user.clear(within(button).getByLabelText('Text color HEX'));
+    await user.type(within(button).getByLabelText('Text color HEX'), '#FEDCBA');
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.primaryCta).toEqual(
+      expect.objectContaining({ backgroundColor: '#123456', textColor: '#FEDCBA' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await user.click(screen.getByRole('tab', { name: 'Welcome' }));
+    await user.click(screen.getByRole('radio', { name: /Onboarding steps/ }));
+    await expandSection(user, 'Steps');
+    await user.click(screen.getByRole('button', { name: 'Remove step 2' }));
+    await user.click(screen.getByRole('button', { name: 'Add step' }));
+    await user.click(screen.getByRole('button', { name: 'Add step' }));
+    const steps = store.getState().editor.draftsByTemplateId['welcome-onboarding']?.fields.steps;
+    expect(Array.isArray(steps) && steps).toHaveLength(4);
   }, 20_000);
 
   it('keeps benefits as individually editable repeated items', async () => {

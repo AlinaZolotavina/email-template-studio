@@ -1,5 +1,5 @@
 import { isHexColor, validateEmailUrl } from '../../email/core';
-import type { EmailFieldValue, ImageValue, TemplateField } from '../../email/types';
+import type { ArticleValue, EmailFieldValue, ImageValue, TemplateField } from '../../email/types';
 
 export const ACCEPTED_IMAGE_TYPES = [
   'image/png',
@@ -46,6 +46,22 @@ export function validateFieldValue(
       if (!validateEmailUrl(value.url, 'link').valid) errors.push('Enter a valid absolute link URL.');
       return errors;
     }
+    case 'button': {
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        !('label' in value) ||
+        !('backgroundColor' in value)
+      ) {
+        return ['Enter button settings.'];
+      }
+      const errors: string[] = [];
+      if (value.label.trim() === '') errors.push('Button label is required.');
+      if (!validateEmailUrl(value.url, 'link').valid) errors.push('Enter a valid absolute link URL.');
+      if (!isHexColor(value.backgroundColor)) errors.push('Enter a valid button color.');
+      if (!isHexColor(value.textColor)) errors.push('Enter a valid button text color.');
+      return errors;
+    }
     case 'image': {
       if (typeof value !== 'object' || value === null || !('remoteUrl' in value)) {
         return ['Image data is invalid.'];
@@ -80,10 +96,11 @@ export function validateFieldValue(
           errors.push(`Article ${index + 1} is invalid.`);
           continue;
         }
-        if (item.image.localPreviewUrl && !validateEmailUrl(item.image.remoteUrl, 'image').valid) {
+        const article = item as ArticleValue;
+        if (article.image.localPreviewUrl && !validateEmailUrl(article.image.remoteUrl, 'image').valid) {
           errors.push(`Article ${index + 1} needs a public image URL before export.`);
         }
-        if (!validateEmailUrl(item.link.url, 'link').valid) errors.push(`Article ${index + 1} needs a valid link URL.`);
+        if (!validateEmailUrl(article.link.url, 'link').valid) errors.push(`Article ${index + 1} needs a valid link URL.`);
       }
       return errors;
     }
@@ -91,5 +108,7 @@ export function validateFieldValue(
       return Array.isArray(value) && value.length <= field.maxItems
         ? []
         : [`Use no more than ${field.maxItems} items.`];
+    case 'step-list':
+      return Array.isArray(value) ? [] : ['Step list is invalid.'];
   }
 }

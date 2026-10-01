@@ -7,6 +7,7 @@ import {
   tableRow,
 } from '../../core';
 import type { EmailHtml } from '../../core';
+import type { StepValue } from '../../types';
 import { welcomeOnboardingManifest } from '../manifests/welcomeOnboarding';
 import {
   brandRow,
@@ -18,38 +19,50 @@ import {
   type RenderSession,
 } from './shared';
 
-function step(session: RenderSession, index: number): EmailHtml {
+function step(session: RenderSession, value: StepValue, index: number): EmailHtml {
   return tableCell({
     children: presentationTable({
       width: '100%',
       children: tableRow(
         joinHtml([
           tableDataCell({
-            children: emailText({
-              text: String(index),
-              style: {
-                color: session.draft.theme.accentColor,
-                fontFamily: session.draft.theme.fontFamily,
-                fontSize: 18,
-                fontWeight: 700,
-                lineHeight: 28,
-                margin: 0,
-                textAlign: 'center',
-              },
+            children: presentationTable({
+              width: 38,
+              children: tableRow(tableDataCell({
+                children: emailText({
+                  text: String(index + 1),
+                  style: {
+                    color: session.draft.theme.accentColor,
+                    fontFamily: session.draft.theme.fontFamily,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 38,
+                    margin: 0,
+                    textAlign: 'center',
+                  },
+                }),
+                align: 'center',
+                valign: 'middle',
+                style: {
+                  backgroundColor: '#EFF6FF',
+                  borderRadius: 999,
+                  width: 38,
+                  height: 38,
+                  padding: 0,
+                },
+              })),
             }),
             align: 'center',
             valign: 'top',
             style: {
-              backgroundColor: '#EFF6FF',
-              borderRadius: 20,
               width: 38,
-              padding: [5, 0],
+              padding: 0,
             },
           }),
           tableDataCell({
             children: joinHtml([
               emailText({
-                text: session.string(`step${index}Title`),
+                text: value.title,
                 tag: 'h2',
                 style: {
                   color: session.draft.theme.textColor,
@@ -61,7 +74,7 @@ function step(session: RenderSession, index: number): EmailHtml {
                 },
               }),
               emailText({
-                text: session.string(`step${index}Text`),
+                text: value.text,
                 style: {
                   color: session.draft.theme.mutedTextColor,
                   fontFamily: session.draft.theme.fontFamily,
@@ -137,9 +150,7 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
           align: 'center',
           style: { padding: [0, 64, 20, 64] },
         }) : null,
-        session.boolean('showStep1') ? step(session, 1) : null,
-        session.boolean('showStep2') ? step(session, 2) : null,
-        session.boolean('showStep3') ? step(session, 3) : null,
+        joinHtml((session.draft.fields.steps as StepValue[]).map((value, index) => step(session, value, index))),
         session.boolean('showAction') ? ctaRow(session) : null,
         !session.boolean('showAction') || support === null
           ? null

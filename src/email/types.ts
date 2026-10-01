@@ -48,6 +48,11 @@ export interface LinkValue {
   url: string;
 }
 
+export interface ButtonValue extends LinkValue {
+  backgroundColor: string;
+  textColor: string;
+}
+
 export interface ArticleValue {
   category: string;
   title: string;
@@ -61,26 +66,36 @@ export interface BenefitValue {
   text: string;
 }
 
+export interface StepValue {
+  title: string;
+  text: string;
+}
+
 export type LinkListValue = LinkValue[];
 export type ArticleListValue = ArticleValue[];
 export type BenefitListValue = BenefitValue[];
+export type StepListValue = StepValue[];
 
 export type EmailFieldValue =
   | string
   | boolean
   | LinkValue
+  | ButtonValue
   | ImageValue
   | LinkListValue
   | ArticleListValue
-  | BenefitListValue;
+  | BenefitListValue
+  | StepListValue;
 export type PersistedEmailFieldValue =
   | string
   | boolean
   | LinkValue
+  | ButtonValue
   | PersistedImageValue
   | LinkListValue
   | (Omit<ArticleValue, 'image'> & { image: PersistedImageValue })[]
-  | BenefitListValue;
+  | BenefitListValue
+  | StepListValue;
 
 export interface EmailDraft {
   templateId: TemplateId;
@@ -107,6 +122,7 @@ interface TemplateFieldBase {
   key: string;
   label: string;
   group: TemplateFieldGroup;
+  visibilityFieldKey?: string;
 }
 
 export interface TextTemplateField extends TemplateFieldBase {
@@ -138,6 +154,10 @@ export interface LinkTemplateField extends TemplateFieldBase {
   type: 'link';
 }
 
+export interface ButtonTemplateField extends TemplateFieldBase {
+  type: 'button';
+}
+
 export interface ToggleTemplateField extends TemplateFieldBase {
   type: 'toggle';
 }
@@ -157,6 +177,10 @@ export interface BenefitListTemplateField extends TemplateFieldBase {
   maxItems: number;
 }
 
+export interface StepListTemplateField extends TemplateFieldBase {
+  type: 'step-list';
+}
+
 export type TemplateField =
   | TextTemplateField
   | TextareaTemplateField
@@ -164,10 +188,12 @@ export type TemplateField =
   | UrlTemplateField
   | ImageTemplateField
   | LinkTemplateField
+  | ButtonTemplateField
   | ToggleTemplateField
   | LinkListTemplateField
   | ArticleListTemplateField
-  | BenefitListTemplateField;
+  | BenefitListTemplateField
+  | StepListTemplateField;
 
 export interface TemplateEditorSection {
   id: string;

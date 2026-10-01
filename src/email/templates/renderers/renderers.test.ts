@@ -1,7 +1,7 @@
 import { parse } from 'parse5';
 
 import { exportRenderContext, previewRenderContext } from '../../core';
-import type { ArticleValue, ImageValue, TemplateId } from '../../types';
+import type { ArticleValue, ButtonValue, ImageValue, StepValue, TemplateId } from '../../types';
 import { getTemplate, getTemplateDefaults } from '../../../features/templates/templateRegistry';
 
 interface TemplateCase {
@@ -108,7 +108,8 @@ describe.each(templateCases)('$id renderer', ({ id, titleField, expectedTitle, f
     );
 
     const draft = getTemplateDefaults(id);
-    draft.fields.primaryCta = { label: 'Unsafe', url: 'javascript:alert(1)' };
+    const primaryCta = draft.fields.primaryCta as ButtonValue;
+    draft.fields.primaryCta = { ...primaryCta, label: 'Unsafe', url: 'javascript:alert(1)' };
     const result = definition.render(draft, exportRenderContext);
     expect(result.errors).toEqual(
       expect.arrayContaining([
@@ -155,8 +156,11 @@ describe('reference layout contracts', () => {
           expect(result.html).toContain(value.label.replace('->', '-&gt;'));
         }
       }
-      const footerLinks = draft.fields.footerLinks;
-      if (Array.isArray(footerLinks)) {
+      for (const field of definition.fields.filter(
+        ({ group, type }) => group === 'footer' && type === 'link-list',
+      )) {
+        const footerLinks = draft.fields[field.key];
+        if (!Array.isArray(footerLinks)) continue;
         for (const value of footerLinks) {
           if ('label' in value) {
             expect(result.html).toContain(value.label.replace('->', '-&gt;'));
@@ -181,5 +185,20 @@ describe('reference layout contracts', () => {
     expect(result.html.match(/class="mobile-stack"/g)).toHaveLength(6);
     expect(result.html).not.toContain('This week: product thinking, design systems, and growth.');
     expect(result.html).not.toContain('display:none;font-size:1px');
+  });
+
+  it('renders any number of onboarding steps with circular number badges', () => {
+    const definition = getTemplate('welcome-onboarding');
+    const draft = getTemplateDefaults('welcome-onboarding');
+    const steps = draft.fields.steps as StepValue[];
+    draft.fields.steps = [...steps.slice(0, 2), { title: 'Invite the team', text: 'Bring collaborators in.' }];
+
+    const result = definition.render(draft, exportRenderContext);
+
+    expect(result.errors).toEqual([]);
+    expect(result.html).toContain('Invite the team');
+    expect(result.html.match(/background-color:#EFF6FF/g)).toHaveLength(3);
+    expect(result.html).toContain('border-radius:999px');
+    expect(result.html).toContain('width="38"');
   });
 });

@@ -124,8 +124,8 @@ function digestFooter(session: RenderSession): EmailHtml {
       align: 'center',
       style: { padding: [18, 32, 10, 32] },
     }),
-    linkValuesRow(session, 'footerLinks', 11),
-    tableCell({
+    session.boolean('showSocialLinks') ? linkValuesRow(session, 'socialLinks', 11) : null,
+    session.boolean('showFooterText') ? tableCell({
       children: emailText({
         text: session.string('footerText'),
         style: {
@@ -139,7 +139,8 @@ function digestFooter(session: RenderSession): EmailHtml {
       }),
       align: 'center',
       style: { padding: [12, 32, 0, 32] },
-    }),
+    }) : null,
+    session.boolean('showLegalLinks') ? linkValuesRow(session, 'legalLinks', 10) : null,
     tableCell({
       children: emailText({
         text: '',

@@ -22,7 +22,7 @@ export const welcomeSimpleManifest = {
       greeting: 'Welcome!',
       subheading: "We're glad you're here.",
       body: "You're all set to get started. Take a moment to explore and see what you can do.",
-      primaryCta: { label: 'Complete your profile ->', url: 'https://example.com/app' },
+      primaryCta: { label: 'Complete your profile ->', url: 'https://example.com/app', backgroundColor: '#7C3AED', textColor: '#FFFFFF' },
       helpText: 'Need help?',
       footerText: "You're receiving this email because you recently created an account with us.",
       footerLinks: [
@@ -45,7 +45,7 @@ export const welcomeSimpleManifest = {
     { key: 'greeting', type: 'text', label: 'Greeting', group: 'content', maxLength: 90 },
     { key: 'subheading', type: 'text', label: 'Subheading', group: 'content', maxLength: 140 },
     { key: 'body', type: 'textarea', label: 'Message', group: 'content', maxLength: 600, rows: 6 },
-    { key: 'primaryCta', type: 'link', label: 'Primary button', group: 'buttons' },
+    { key: 'primaryCta', type: 'button', label: 'Primary button', group: 'buttons' },
     { key: 'helpText', type: 'text', label: 'Help prompt', group: 'footer', maxLength: 100 },
     { key: 'footerText', type: 'textarea', label: 'Footer text', group: 'footer', maxLength: 300, rows: 3 },
     { key: 'footerLinks', type: 'link-list', label: 'Footer links', group: 'footer', maxItems: 10 },

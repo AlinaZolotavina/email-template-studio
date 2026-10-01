@@ -29,6 +29,14 @@ function matchesFieldType(field: TemplateField, value: EmailFieldValue): boolean
         typeof value.label === 'string' &&
         typeof value.url === 'string'
       );
+    case 'button':
+      return (
+        isRecord(value) &&
+        typeof value.label === 'string' &&
+        typeof value.url === 'string' &&
+        typeof value.backgroundColor === 'string' &&
+        typeof value.textColor === 'string'
+      );
     case 'link-list':
       return Array.isArray(value) && value.every((item) =>
         isRecord(item) && typeof item.label === 'string' && typeof item.url === 'string'
@@ -36,6 +44,10 @@ function matchesFieldType(field: TemplateField, value: EmailFieldValue): boolean
     case 'benefit-list':
       return Array.isArray(value) && value.every((item) =>
         isRecord(item) && typeof item.label === 'string' && typeof item.text === 'string'
+      );
+    case 'step-list':
+      return Array.isArray(value) && value.every((item) =>
+        isRecord(item) && typeof item.title === 'string' && typeof item.text === 'string'
       );
     case 'article-list':
       return Array.isArray(value) && value.every((item) =>
@@ -125,6 +137,14 @@ export function assertTemplateManifest(manifest: TemplateManifest): void {
       }
       sectionFieldKeys.add(fieldKey);
     }
+  }
+
+  for (const field of manifest.fields) {
+    if (field.visibilityFieldKey === undefined) continue;
+    if (!keys.has(field.visibilityFieldKey)) {
+      throw new Error(`Field "${field.key}" references unknown visibility field "${field.visibilityFieldKey}".`);
+    }
+    sectionFieldKeys.add(field.visibilityFieldKey);
   }
 
   for (const fieldKey of manifest.topLevelFieldKeys ?? []) {

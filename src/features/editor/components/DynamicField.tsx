@@ -8,6 +8,7 @@ import type {
   EmailFieldValue,
   ImageValue,
   LinkValue,
+  StepValue,
   TemplateField,
 } from '../../../email/types';
 import { validateFieldValue, validateImageFile } from '../fieldValidation';
@@ -43,12 +44,24 @@ export function DynamicField({
   const errorId = `${id}-errors`;
   const colorValue = typeof value === 'string' ? value : '#000000';
   const [colorState, setColorState] = useState({ input: colorValue, base: colorValue });
+  const currentButton =
+    typeof value === 'object' && value !== null && 'backgroundColor' in value
+      ? value
+      : { label: '', url: '', backgroundColor: '#000000', textColor: '#FFFFFF' };
+  const [buttonBackgroundState, setButtonBackgroundState] = useState({ input: currentButton.backgroundColor, base: currentButton.backgroundColor });
+  const [buttonTextState, setButtonTextState] = useState({ input: currentButton.textColor, base: currentButton.textColor });
   const [fileError, setFileError] = useState<string>();
   const colorDraft = colorState.base === colorValue ? colorState.input : colorValue;
+  const buttonBackgroundDraft = buttonBackgroundState.base === currentButton.backgroundColor ? buttonBackgroundState.input : currentButton.backgroundColor;
+  const buttonTextDraft = buttonTextState.base === currentButton.textColor ? buttonTextState.input : currentButton.textColor;
 
   const errors = field.type === 'color'
     ? isHexColor(colorDraft) ? [] : ['Use a six-digit HEX color, for example #2563EB.']
     : validateFieldValue(field, value);
+  if (field.type === 'button') {
+    if (!isHexColor(buttonBackgroundDraft)) errors.push('Enter a valid button color.');
+    if (!isHexColor(buttonTextDraft)) errors.push('Enter a valid button text color.');
+  }
   if (fileError !== undefined) errors.push(fileError);
   const describedBy = errors.length > 0 ? errorId : undefined;
 
@@ -58,8 +71,8 @@ export function DynamicField({
       <div className={styles.collection}>
         {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
         {links.map((link, index) => (
-          <fieldset className={styles.collectionItem} key={index}>
-            <legend>Link {index + 1}</legend>
+          <div className={styles.collectionItem} key={index} role="group" aria-label={`Link ${index + 1}`}>
+            <p className={styles.blockTitle}>Link {index + 1}</p>
             <button className={styles.removeItemButton} type="button" aria-label={`Remove link ${index + 1}`} title="Remove link" onClick={() => onChange(links.filter((_, itemIndex) => itemIndex !== index))}>
               <Trash2 aria-hidden="true" size={14} />
             </button>
@@ -67,7 +80,7 @@ export function DynamicField({
             <input id={`${id}-${index}-label`} className={styles.textInput} value={link.label} onChange={(event) => onChange(links.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
             <label htmlFor={`${id}-${index}-url`}>URL</label>
             <input id={`${id}-${index}-url`} className={styles.textInput} type="url" value={link.url} onChange={(event) => onChange(links.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))} />
-          </fieldset>
+          </div>
         ))}
         <button className={styles.addItemButton} type="button" disabled={links.length >= field.maxItems} onClick={() => onChange([...links, { label: `Link ${links.length + 1}`, url: 'https://example.com' }])}>
           <Plus aria-hidden="true" size={14} /> Add link
@@ -83,8 +96,8 @@ export function DynamicField({
       <div className={styles.collection}>
         {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
         {benefits.map((benefit, index) => (
-          <fieldset className={styles.collectionItem} key={index}>
-            <legend>Benefit {index + 1}</legend>
+          <div className={styles.collectionItem} key={index} role="group" aria-label={`Benefit ${index + 1}`}>
+            <p className={styles.blockTitle}>Benefit {index + 1}</p>
             <button className={styles.removeItemButton} type="button" aria-label={`Remove benefit ${index + 1}`} title="Remove benefit" onClick={() => onChange(benefits.filter((_, itemIndex) => itemIndex !== index))}>
               <Trash2 aria-hidden="true" size={14} />
             </button>
@@ -92,10 +105,35 @@ export function DynamicField({
             <input id={`${id}-${index}-label`} className={styles.textInput} value={benefit.label} onChange={(event) => onChange(benefits.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
             <label htmlFor={`${id}-${index}-text`}>Text</label>
             <input id={`${id}-${index}-text`} className={styles.textInput} value={benefit.text} onChange={(event) => onChange(benefits.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item))} />
-          </fieldset>
+          </div>
         ))}
         <button className={styles.addItemButton} type="button" disabled={benefits.length >= field.maxItems} onClick={() => onChange([...benefits, { label: `Benefit ${benefits.length + 1}`, text: 'Describe this benefit' }])}>
           <Plus aria-hidden="true" size={14} /> Add benefit
+        </button>
+        <FieldErrors id={errorId} errors={errors} />
+      </div>
+    );
+  }
+
+  if (field.type === 'step-list') {
+    const steps = Array.isArray(value) ? value as StepValue[] : [];
+    return (
+      <div className={styles.collection}>
+        {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
+        {steps.map((step, index) => (
+          <div className={styles.collectionItem} key={index} role="group" aria-label={`Step ${index + 1}`}>
+            <p className={styles.blockTitle}>Step {index + 1}</p>
+            <button className={styles.removeItemButton} type="button" aria-label={`Remove step ${index + 1}`} title="Remove step" onClick={() => onChange(steps.filter((_, itemIndex) => itemIndex !== index))}>
+              <Trash2 aria-hidden="true" size={14} />
+            </button>
+            <label htmlFor={`${id}-${index}-title`}>Title</label>
+            <input id={`${id}-${index}-title`} className={styles.textInput} value={step.title} onChange={(event) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item))} />
+            <label htmlFor={`${id}-${index}-text`}>Description</label>
+            <textarea id={`${id}-${index}-text`} className={styles.textInput} rows={3} value={step.text} onChange={(event) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item))} />
+          </div>
+        ))}
+        <button className={styles.addItemButton} type="button" onClick={() => onChange([...steps, { title: `Step ${steps.length + 1}`, text: 'Describe this step' }])}>
+          <Plus aria-hidden="true" size={14} /> Add step
         </button>
         <FieldErrors id={errorId} errors={errors} />
       </div>
@@ -118,8 +156,8 @@ export function DynamicField({
       <div className={styles.collection}>
         {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
         {articles.map((article, index) => (
-          <fieldset className={styles.collectionItem} key={index}>
-            <legend>Article {index + 1}</legend>
+          <div className={styles.collectionItem} key={index} role="group" aria-label={`Article ${index + 1}`}>
+            <p className={styles.blockTitle}>Article {index + 1}</p>
             <button className={styles.removeItemButton} type="button" aria-label={`Remove article ${index + 1}`} title="Remove article" onClick={() => onChange(articles.filter((_, itemIndex) => itemIndex !== index))}>
               <Trash2 aria-hidden="true" size={14} />
             </button>
@@ -144,7 +182,7 @@ export function DynamicField({
             <input id={`${id}-${index}-link-label`} className={styles.textInput} value={article.link.label} onChange={(event) => updateArticle(index, { link: { ...article.link, label: event.target.value } })} />
             <label htmlFor={`${id}-${index}-link-url`}>Link URL</label>
             <input id={`${id}-${index}-link-url`} className={styles.textInput} type="url" value={article.link.url} onChange={(event) => updateArticle(index, { link: { ...article.link, url: event.target.value } })} />
-          </fieldset>
+          </div>
         ))}
         <button className={styles.addItemButton} type="button" disabled={articles.length >= field.maxItems} onClick={() => onChange([...articles, { category: 'CATEGORY', title: `Article ${articles.length + 1}`, text: 'Article summary', image: { remoteUrl: '', alt: `Article ${articles.length + 1} image` }, link: { label: 'Read more ->', url: 'https://example.com' } }])}>
           <Plus aria-hidden="true" size={14} /> Add article
@@ -202,6 +240,38 @@ export function DynamicField({
     );
   }
 
+  if (field.type === 'button') {
+    const button = currentButton;
+    const updateButtonColor = (key: 'backgroundColor' | 'textColor', nextValue: string) => {
+      if (key === 'backgroundColor') {
+        setButtonBackgroundState({ input: nextValue, base: button.backgroundColor });
+      } else {
+        setButtonTextState({ input: nextValue, base: button.textColor });
+      }
+      if (isHexColor(nextValue)) onChange({ ...button, [key]: nextValue.toUpperCase() });
+    };
+    return (
+      <div className={styles.fieldset} role="group" aria-label={field.label} aria-describedby={describedBy}>
+        <p className={styles.blockTitle}>{field.label}</p>
+        <label htmlFor={`${id}-label`}>Label</label>
+        <input id={`${id}-label`} className={styles.textInput} value={button.label} onChange={(event) => onChange({ ...button, label: event.target.value })} />
+        <label htmlFor={`${id}-url`}>URL</label>
+        <input id={`${id}-url`} className={styles.textInput} type="url" value={button.url} onChange={(event) => onChange({ ...button, url: event.target.value })} />
+        <label htmlFor={`${id}-background`}>Button color</label>
+        <div className={styles.colorControl}>
+          <input id={`${id}-background`} className={styles.colorPicker} type="color" value={isHexColor(buttonBackgroundDraft) ? buttonBackgroundDraft : '#000000'} onChange={(event) => updateButtonColor('backgroundColor', event.target.value)} />
+          <input className={styles.textInput} aria-label="Button color HEX" aria-invalid={!isHexColor(buttonBackgroundDraft)} value={buttonBackgroundDraft} onChange={(event) => updateButtonColor('backgroundColor', event.target.value)} />
+        </div>
+        <label htmlFor={`${id}-text-color`}>Text color</label>
+        <div className={styles.colorControl}>
+          <input id={`${id}-text-color`} className={styles.colorPicker} type="color" value={isHexColor(buttonTextDraft) ? buttonTextDraft : '#FFFFFF'} onChange={(event) => updateButtonColor('textColor', event.target.value)} />
+          <input className={styles.textInput} aria-label="Text color HEX" aria-invalid={!isHexColor(buttonTextDraft)} value={buttonTextDraft} onChange={(event) => updateButtonColor('textColor', event.target.value)} />
+        </div>
+        <FieldErrors id={errorId} errors={errors} />
+      </div>
+    );
+  }
+
   if (field.type === 'link') {
     const link: LinkValue =
       typeof value === 'object' &&
@@ -213,8 +283,8 @@ export function DynamicField({
         ? value
         : { label: '', url: '' };
     return (
-      <fieldset className={styles.fieldset} aria-describedby={describedBy}>
-        <legend>{field.label}</legend>
+      <div className={styles.fieldset} role="group" aria-label={field.label} aria-describedby={describedBy}>
+        <p className={styles.blockTitle}>{field.label}</p>
         <label htmlFor={`${id}-label`}>Label</label>
         <input
           id={`${id}-label`}
@@ -235,7 +305,7 @@ export function DynamicField({
           onChange={(event) => onChange({ ...link, url: event.target.value })}
         />
         <FieldErrors id={errorId} errors={errors} />
-      </fieldset>
+      </div>
     );
   }
 
@@ -263,8 +333,8 @@ export function DynamicField({
       }
     };
     return (
-      <fieldset className={styles.fieldset} aria-describedby={describedBy}>
-        <legend>{field.label}</legend>
+      <div className={styles.fieldset} role="group" aria-label={field.label} aria-describedby={describedBy}>
+        <p className={styles.blockTitle}>{field.label}</p>
         <p className={styles.fieldHint}>Recommended: {field.recommendedSize}</p>
         <label htmlFor={`${id}-url`}>Public image URL</label>
         <input
@@ -316,7 +386,7 @@ export function DynamicField({
           <p className={styles.previewStatus}>Local preview only. A public URL is required for export.</p>
         )}
         <FieldErrors id={errorId} errors={errors} />
-      </fieldset>
+      </div>
     );
   }
 

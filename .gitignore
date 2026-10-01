@@ -6,3 +6,4 @@ test-results
 ARCHITECTURE.md
 *.local
 .DS_Store
+debug.log

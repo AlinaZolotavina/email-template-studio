@@ -107,9 +107,15 @@ test('adds and removes articles, footer links, and entire sections', async ({ pa
   ).toHaveCount(6);
 
   await page.getByRole('button', { name: 'Expand Footer' }).click();
-  await expect(page.getByRole('group', { name: 'Link 1' })).toBeVisible();
+  const socialLinks = page.getByRole('group', { name: 'Social links' });
+  await expect(socialLinks.getByRole('group', { name: 'Link 1' })).toBeVisible();
   await expect(page.getByText('X link', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Remove link 1' }).click();
+  await socialLinks.getByRole('button', { name: 'Remove link 1' }).click();
+
+  await page.getByRole('button', { name: 'Remove Delivery notice' }).click();
+  await page.getByRole('button', { name: 'Remove Legal links' }).click();
+  await expect(page.getByRole('button', { name: 'Add Delivery notice' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add Legal links' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Remove Preheader' }).click();
   await expect(page.getByRole('textbox', { name: 'Preheader' })).toHaveCount(0);

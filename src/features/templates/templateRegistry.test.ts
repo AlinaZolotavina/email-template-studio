@@ -1,5 +1,5 @@
 import { persistedSessionV1Schema, emailDraftSchema } from '../../email/schemas';
-import { TEMPLATE_IDS, type ImageValue } from '../../email/types';
+import { TEMPLATE_IDS, type ButtonValue, type ImageValue } from '../../email/types';
 import { assertTemplateManifest } from '../../email/templates/validateManifest';
 import {
   getTemplate,
@@ -31,6 +31,9 @@ describe('template registry', () => {
           ...(visibilityFieldKey === undefined ? [] : [visibilityFieldKey]),
         ]),
         ...(manifest.topLevelFieldKeys ?? []),
+        ...manifest.fields.flatMap(({ visibilityFieldKey }) =>
+          visibilityFieldKey === undefined ? [] : [visibilityFieldKey]
+        ),
       ];
       expect(editorFieldKeys).toEqual(
         expect.arrayContaining(fieldKeys),
@@ -69,11 +72,14 @@ describe('template registry', () => {
           expect(value.url).toMatch(/^(?:https:|mailto:)/);
         }
       }
-      const footerLinksField = manifest.fields.find(({ key }) => key === 'footerLinks');
-      expect(footerLinksField).toEqual(expect.objectContaining({ type: 'link-list' }));
-      const footerLinks = manifest.defaults.fields.footerLinks;
-      expect(Array.isArray(footerLinks)).toBe(true);
-      if (Array.isArray(footerLinks)) {
+      const footerLinkFields = manifest.fields.filter(
+        ({ group, type }) => group === 'footer' && type === 'link-list',
+      );
+      expect(footerLinkFields.length).toBeGreaterThan(0);
+      for (const field of footerLinkFields) {
+        const footerLinks = manifest.defaults.fields[field.key];
+        expect(Array.isArray(footerLinks)).toBe(true);
+        if (!Array.isArray(footerLinks)) continue;
         for (const value of footerLinks) {
           expect('label' in value && typeof value.label === 'string').toBe(true);
           expect('url' in value && typeof value.url === 'string').toBe(true);
@@ -82,11 +88,23 @@ describe('template registry', () => {
     }
 
     for (const id of ['newsletter-digest', 'newsletter-promo'] as const) {
-      const footerLinks = getTemplateDefaults(id).fields.footerLinks;
-      expect(Array.isArray(footerLinks) && footerLinks.some(
+      const legalLinks = getTemplateDefaults(id).fields.legalLinks;
+      expect(Array.isArray(legalLinks) && legalLinks.some(
         (link) => 'label' in link && link.label === 'Unsubscribe',
       )).toBe(true);
     }
+
+    for (const manifest of listTemplates()) {
+      const buttonField = manifest.fields.find(({ key }) => key === 'primaryCta');
+      expect(buttonField).toEqual(expect.objectContaining({ type: 'button' }));
+      const button = manifest.defaults.fields.primaryCta as ButtonValue;
+      expect(button.backgroundColor).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(button.textColor).toMatch(/^#[0-9A-F]{6}$/i);
+    }
+
+    expect(getTemplate('welcome-onboarding').fields).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 'steps', type: 'step-list' })]),
+    );
   });
 
   it('returns a deep copy of defaults', () => {

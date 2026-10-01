@@ -20,6 +20,9 @@ function matchesDefaultShape(
   }
   if (Array.isArray(defaultValue)) return Array.isArray(candidate);
   if (typeof candidate !== 'object' || candidate === null) return false;
+  if ('backgroundColor' in defaultValue) {
+    return 'backgroundColor' in candidate && 'textColor' in candidate;
+  }
   if ('label' in defaultValue) return 'label' in candidate && 'url' in candidate;
   return 'remoteUrl' in candidate && 'alt' in candidate;
 }

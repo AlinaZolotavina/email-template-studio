@@ -121,12 +121,13 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
                 </div>
               </div>
               {sectionEnabled && isOpen ? <div className={styles.groupFields} id={contentId}>
-                {fields.map((field) => (
-                  <DynamicField
+                {fields.map((field) => {
+                  const fieldEnabled = field.visibilityFieldKey === undefined || draft.fields[field.visibilityFieldKey] === true;
+                  const editorField = fieldEnabled ? <DynamicField
                     key={`${template.id}:${field.key}:${editorRevision}`}
                     field={field}
                     value={valueFor(field.key, field.type)}
-                    hideLabel={section.hiddenFieldLabels?.includes(field.key)}
+                    hideLabel={field.visibilityFieldKey !== undefined || section.hiddenFieldLabels?.includes(field.key)}
                     onChange={(value) => updateField(field.key, value)}
                     onImageFile={field.type === 'image' || field.type === 'article-list' ? async (file, itemIndex) => {
                       const assetKey = itemIndex === undefined ? field.key : `${field.key}.${itemIndex}`;
@@ -154,8 +155,27 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
                         dispatch(imageLocalPreviewRemoved({ templateId: template.id, key: field.key }));
                       }
                     } : undefined}
-                  />
-                ))}
+                  /> : null;
+
+                  if (field.visibilityFieldKey === undefined) return editorField;
+                  return (
+                    <div className={styles.fieldBlock} key={`${template.id}:${field.key}:${editorRevision}`} role="group" aria-label={field.label}>
+                      <div className={styles.fieldBlockHeader}>
+                        <h4>{field.label}</h4>
+                        {fieldEnabled ? (
+                          <button className={styles.sectionAction} type="button" aria-label={`Remove ${field.label}`} title={`Remove ${field.label}`} onClick={() => updateField(field.visibilityFieldKey!, false)}>
+                            <Trash2 aria-hidden="true" size={14} />
+                          </button>
+                        ) : (
+                          <button className={styles.restoreSectionButton} type="button" aria-label={`Add ${field.label}`} onClick={() => updateField(field.visibilityFieldKey!, true)}>
+                            <Plus aria-hidden="true" size={14} /> Add
+                          </button>
+                        )}
+                      </div>
+                      {editorField}
+                    </div>
+                  );
+                })}
               </div> : null}
             </section>
           );

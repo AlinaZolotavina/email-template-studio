@@ -39,8 +39,20 @@ export const linkValueSchema = z.strictObject({
   url: z.string(),
 });
 
+const buttonValueSchema = z.strictObject({
+  label: z.string(),
+  url: z.string(),
+  backgroundColor: hexColorSchema,
+  textColor: hexColorSchema,
+});
+
 const benefitValueSchema = z.strictObject({
   label: z.string(),
+  text: z.string(),
+});
+
+const stepValueSchema = z.strictObject({
+  title: z.string(),
   text: z.string(),
 });
 
@@ -60,9 +72,11 @@ const emailFieldValueSchema = z.union([
   z.string(),
   z.boolean(),
   linkValueSchema,
+  buttonValueSchema,
   imageValueSchema,
   z.array(linkValueSchema),
   z.array(benefitValueSchema),
+  z.array(stepValueSchema),
   z.array(articleValueSchema),
 ]);
 
@@ -70,9 +84,11 @@ const persistedEmailFieldValueSchema = z.union([
   z.string(),
   z.boolean(),
   linkValueSchema,
+  buttonValueSchema,
   persistedImageValueSchema,
   z.array(linkValueSchema),
   z.array(benefitValueSchema),
+  z.array(stepValueSchema),
   z.array(persistedArticleValueSchema),
 ]);
 
