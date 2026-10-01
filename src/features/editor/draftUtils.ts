@@ -8,7 +8,7 @@ import type {
 import { getTemplateDefaults } from '../templates/templateRegistry';
 
 function cloneFieldValue(value: EmailFieldValue): EmailFieldValue {
-  return typeof value === 'object' ? { ...value } : value;
+  return structuredClone(value);
 }
 
 function matchesDefaultShape(
@@ -18,6 +18,7 @@ function matchesDefaultShape(
   if (typeof defaultValue !== 'object' || defaultValue === null) {
     return typeof candidate === typeof defaultValue;
   }
+  if (Array.isArray(defaultValue)) return Array.isArray(candidate);
   if (typeof candidate !== 'object' || candidate === null) return false;
   if ('label' in defaultValue) return 'label' in candidate && 'url' in candidate;
   return 'remoteUrl' in candidate && 'alt' in candidate;
@@ -79,5 +80,5 @@ export function toPersistedDraft(
 export function clonePersistedFieldValue(
   value: PersistedEmailFieldValue,
 ): EmailFieldValue {
-  return typeof value === 'object' ? { ...value } : value;
+  return structuredClone(value);
 }

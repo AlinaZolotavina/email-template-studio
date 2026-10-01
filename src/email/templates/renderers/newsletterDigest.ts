@@ -7,30 +7,31 @@ import {
   tableRow,
 } from '../../core';
 import type { EmailHtml } from '../../core';
+import type { ArticleValue } from '../../types';
 import { newsletterDigestManifest } from '../manifests/newsletterDigest';
 import {
   brandRow,
   contentTable,
   createTemplateRenderer,
   ctaRow,
-  linksRow,
+  linkValuesRow,
   preheaderRow,
   type RenderSession,
 } from './shared';
 
-function article(session: RenderSession, index: number): EmailHtml {
+function article(session: RenderSession, value: ArticleValue, index: number): EmailHtml {
   const image = session.boolean('showArticleImages')
-    ? session.optionalImage(`article${index}Image`, 180, 135)
+    ? session.optionalImageValue(`articles.${index}.image`, value.image, 180, 135)
     : null;
   const link = session.textLink(
-    `article${index}Link`,
-    session.link(`article${index}Link`),
+    `articles.${index}.link`,
+    value.link,
     session.draft.theme.accentColor,
     13,
   );
   const copy = joinHtml([
     emailText({
-      text: session.string(`article${index}Category`).toUpperCase(),
+      text: value.category.toUpperCase(),
       style: {
         color: session.draft.theme.accentColor,
         fontFamily: session.draft.theme.fontFamily,
@@ -41,7 +42,7 @@ function article(session: RenderSession, index: number): EmailHtml {
       },
     }),
     emailText({
-      text: session.string(`article${index}Title`),
+      text: value.title,
       tag: 'h2',
       style: {
         color: session.draft.theme.textColor,
@@ -53,7 +54,7 @@ function article(session: RenderSession, index: number): EmailHtml {
       },
     }),
     emailText({
-      text: session.string(`article${index}Text`),
+      text: value.text,
       style: {
         color: session.draft.theme.mutedTextColor,
         fontFamily: session.draft.theme.fontFamily,
@@ -123,7 +124,7 @@ function digestFooter(session: RenderSession): EmailHtml {
       align: 'center',
       style: { padding: [18, 32, 10, 32] },
     }),
-    linksRow(session, ['socialX', 'socialLinkedIn', 'socialEmail'], 12),
+    linkValuesRow(session, 'footerLinks', 11),
     tableCell({
       children: emailText({
         text: session.string('footerText'),
@@ -139,7 +140,6 @@ function digestFooter(session: RenderSession): EmailHtml {
       align: 'center',
       style: { padding: [12, 32, 0, 32] },
     }),
-    linksRow(session, ['preferencesLink', 'unsubscribeLink'], 10),
     tableCell({
       children: emailText({
         text: '',
@@ -157,8 +157,9 @@ export const renderNewsletterDigest = createTemplateRenderer(
     contentTable(
       session,
       joinHtml([
-        preheaderRow(session),
-        brandRow(session, '//'),
+        session.boolean('showPreheader') ? preheaderRow(session) : null,
+        session.boolean('showHeader') ? brandRow(session, '//') : null,
+        session.boolean('showHeader') ?
         tableCell({
           children: emailText({
             text: session.string('heading'),
@@ -175,7 +176,8 @@ export const renderNewsletterDigest = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [12, 32, 8, 32] },
-        }),
+        }) : null,
+        session.boolean('showHeader') ?
         tableCell({
           children: emailText({
             text: session.string('intro'),
@@ -190,12 +192,12 @@ export const renderNewsletterDigest = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 54, 18, 54] },
-        }),
-        ctaRow(session),
-        article(session, 1),
-        article(session, 2),
-        article(session, 3),
-        digestFooter(session),
+        }) : null,
+        session.boolean('showHeader') ? ctaRow(session) : null,
+        session.boolean('showArticles')
+          ? joinHtml(session.articles('articles').map((value, index) => article(session, value, index)))
+          : null,
+        session.boolean('showFooter') ? digestFooter(session) : null,
       ]),
     ),
 );

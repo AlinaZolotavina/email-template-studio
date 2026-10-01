@@ -1,8 +1,10 @@
-import { ImagePlus, Trash2 } from 'lucide-react';
+import { ImagePlus, Plus, Trash2 } from 'lucide-react';
 import { useId, useState, type ChangeEvent } from 'react';
 
 import { isHexColor } from '../../../email/core';
 import type {
+  ArticleValue,
+  BenefitValue,
   EmailFieldValue,
   ImageValue,
   LinkValue,
@@ -15,8 +17,9 @@ interface DynamicFieldProps {
   field: TemplateField;
   value: EmailFieldValue;
   onChange: (value: EmailFieldValue) => void;
-  onImageFile?: (file: File) => void | Promise<void>;
-  onRemoveLocalImage?: () => void;
+  hideLabel?: boolean;
+  onImageFile?: (file: File, itemIndex?: number) => void | Promise<void>;
+  onRemoveLocalImage?: (itemIndex?: number) => void;
 }
 
 function FieldErrors({ id, errors }: { id: string; errors: string[] }) {
@@ -32,6 +35,7 @@ export function DynamicField({
   field,
   value,
   onChange,
+  hideLabel = false,
   onImageFile,
   onRemoveLocalImage,
 }: DynamicFieldProps) {
@@ -48,6 +52,108 @@ export function DynamicField({
   if (fileError !== undefined) errors.push(fileError);
   const describedBy = errors.length > 0 ? errorId : undefined;
 
+  if (field.type === 'link-list') {
+    const links = Array.isArray(value) ? value as LinkValue[] : [];
+    return (
+      <div className={styles.collection}>
+        {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
+        {links.map((link, index) => (
+          <fieldset className={styles.collectionItem} key={index}>
+            <legend>Link {index + 1}</legend>
+            <button className={styles.removeItemButton} type="button" aria-label={`Remove link ${index + 1}`} title="Remove link" onClick={() => onChange(links.filter((_, itemIndex) => itemIndex !== index))}>
+              <Trash2 aria-hidden="true" size={14} />
+            </button>
+            <label htmlFor={`${id}-${index}-label`}>Label</label>
+            <input id={`${id}-${index}-label`} className={styles.textInput} value={link.label} onChange={(event) => onChange(links.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
+            <label htmlFor={`${id}-${index}-url`}>URL</label>
+            <input id={`${id}-${index}-url`} className={styles.textInput} type="url" value={link.url} onChange={(event) => onChange(links.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))} />
+          </fieldset>
+        ))}
+        <button className={styles.addItemButton} type="button" disabled={links.length >= field.maxItems} onClick={() => onChange([...links, { label: `Link ${links.length + 1}`, url: 'https://example.com' }])}>
+          <Plus aria-hidden="true" size={14} /> Add link
+        </button>
+        <FieldErrors id={errorId} errors={errors} />
+      </div>
+    );
+  }
+
+  if (field.type === 'benefit-list') {
+    const benefits = Array.isArray(value) ? value as BenefitValue[] : [];
+    return (
+      <div className={styles.collection}>
+        {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
+        {benefits.map((benefit, index) => (
+          <fieldset className={styles.collectionItem} key={index}>
+            <legend>Benefit {index + 1}</legend>
+            <button className={styles.removeItemButton} type="button" aria-label={`Remove benefit ${index + 1}`} title="Remove benefit" onClick={() => onChange(benefits.filter((_, itemIndex) => itemIndex !== index))}>
+              <Trash2 aria-hidden="true" size={14} />
+            </button>
+            <label htmlFor={`${id}-${index}-label`}>Label</label>
+            <input id={`${id}-${index}-label`} className={styles.textInput} value={benefit.label} onChange={(event) => onChange(benefits.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
+            <label htmlFor={`${id}-${index}-text`}>Text</label>
+            <input id={`${id}-${index}-text`} className={styles.textInput} value={benefit.text} onChange={(event) => onChange(benefits.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item))} />
+          </fieldset>
+        ))}
+        <button className={styles.addItemButton} type="button" disabled={benefits.length >= field.maxItems} onClick={() => onChange([...benefits, { label: `Benefit ${benefits.length + 1}`, text: 'Describe this benefit' }])}>
+          <Plus aria-hidden="true" size={14} /> Add benefit
+        </button>
+        <FieldErrors id={errorId} errors={errors} />
+      </div>
+    );
+  }
+
+  if (field.type === 'article-list') {
+    const articles = Array.isArray(value) ? value as ArticleValue[] : [];
+    const updateArticle = (index: number, update: Partial<ArticleValue>) =>
+      onChange(articles.map((item, itemIndex) => itemIndex === index ? { ...item, ...update } : item));
+    const handleArticleFile = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (file === undefined) return;
+      const nextError = validateImageFile(file);
+      setFileError(nextError);
+      if (nextError === undefined) await onImageFile?.(file, index);
+    };
+    return (
+      <div className={styles.collection}>
+        {!hideLabel && <p className={styles.collectionLabel}>{field.label}</p>}
+        {articles.map((article, index) => (
+          <fieldset className={styles.collectionItem} key={index}>
+            <legend>Article {index + 1}</legend>
+            <button className={styles.removeItemButton} type="button" aria-label={`Remove article ${index + 1}`} title="Remove article" onClick={() => onChange(articles.filter((_, itemIndex) => itemIndex !== index))}>
+              <Trash2 aria-hidden="true" size={14} />
+            </button>
+            <label htmlFor={`${id}-${index}-category`}>Category</label>
+            <input id={`${id}-${index}-category`} className={styles.textInput} value={article.category} onChange={(event) => updateArticle(index, { category: event.target.value })} />
+            <label htmlFor={`${id}-${index}-title`}>Title</label>
+            <input id={`${id}-${index}-title`} className={styles.textInput} value={article.title} onChange={(event) => updateArticle(index, { title: event.target.value })} />
+            <label htmlFor={`${id}-${index}-text`}>Summary</label>
+            <textarea id={`${id}-${index}-text`} className={styles.textInput} rows={3} value={article.text} onChange={(event) => updateArticle(index, { text: event.target.value })} />
+            <label htmlFor={`${id}-${index}-image-url`}>Image URL</label>
+            <input id={`${id}-${index}-image-url`} className={styles.textInput} type="url" value={article.image.remoteUrl} onChange={(event) => updateArticle(index, { image: { ...article.image, remoteUrl: event.target.value } })} />
+            <label htmlFor={`${id}-${index}-image-alt`}>Image alt text</label>
+            <input id={`${id}-${index}-image-alt`} className={styles.textInput} value={article.image.alt} onChange={(event) => updateArticle(index, { image: { ...article.image, alt: event.target.value } })} />
+            <div className={styles.fileRow}>
+              <span className={styles.filePicker}>
+                <input id={`${id}-${index}-file`} className={styles.fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => void handleArticleFile(event, index)} />
+                <label className={styles.fileButton} htmlFor={`${id}-${index}-file`}><ImagePlus aria-hidden="true" size={15} /> Local preview</label>
+              </span>
+              {article.image.localPreviewUrl && <button type="button" className={styles.iconButton} aria-label={`Remove local preview for article ${index + 1}`} onClick={() => onRemoveLocalImage?.(index)}><Trash2 aria-hidden="true" size={15} /></button>}
+            </div>
+            <label htmlFor={`${id}-${index}-link-label`}>Link label</label>
+            <input id={`${id}-${index}-link-label`} className={styles.textInput} value={article.link.label} onChange={(event) => updateArticle(index, { link: { ...article.link, label: event.target.value } })} />
+            <label htmlFor={`${id}-${index}-link-url`}>Link URL</label>
+            <input id={`${id}-${index}-link-url`} className={styles.textInput} type="url" value={article.link.url} onChange={(event) => updateArticle(index, { link: { ...article.link, url: event.target.value } })} />
+          </fieldset>
+        ))}
+        <button className={styles.addItemButton} type="button" disabled={articles.length >= field.maxItems} onClick={() => onChange([...articles, { category: 'CATEGORY', title: `Article ${articles.length + 1}`, text: 'Article summary', image: { remoteUrl: '', alt: `Article ${articles.length + 1} image` }, link: { label: 'Read more ->', url: 'https://example.com' } }])}>
+          <Plus aria-hidden="true" size={14} /> Add article
+        </button>
+        <FieldErrors id={errorId} errors={errors} />
+      </div>
+    );
+  }
+
   if (field.type === 'color') {
     const updateColor = (nextValue: string) => {
       setColorState({ input: nextValue, base: colorValue });
@@ -55,7 +161,7 @@ export function DynamicField({
     };
     return (
       <div className={styles.field}>
-        <label htmlFor={id}>{field.label}</label>
+        <label className={hideLabel ? styles.srOnly : undefined} htmlFor={id}>{field.label}</label>
         <div className={styles.colorControl}>
           <input
             aria-label={`${field.label} color picker`}
@@ -82,7 +188,7 @@ export function DynamicField({
   if (field.type === 'toggle') {
     return (
       <div className={`${styles.field} ${styles.toggleField}`}>
-        <label htmlFor={id}>{field.label}</label>
+        <label className={hideLabel ? styles.srOnly : undefined} htmlFor={id}>{field.label}</label>
         <input
           id={id}
           aria-describedby={describedBy}
@@ -200,7 +306,7 @@ export function DynamicField({
               className={styles.iconButton}
               aria-label={`Remove local preview for ${field.label}`}
               title="Remove local preview"
-              onClick={onRemoveLocalImage}
+              onClick={() => onRemoveLocalImage?.()}
             >
               <Trash2 aria-hidden="true" size={15} />
             </button>
@@ -225,7 +331,7 @@ export function DynamicField({
   };
   return (
     <div className={styles.field}>
-      <label htmlFor={id}>{field.label}</label>
+      <label className={hideLabel ? styles.srOnly : undefined} htmlFor={id}>{field.label}</label>
       {field.type === 'textarea' ? (
         <textarea {...common} rows={field.rows ?? 3} maxLength={field.maxLength} />
       ) : (

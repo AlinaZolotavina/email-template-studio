@@ -39,11 +39,31 @@ export const linkValueSchema = z.strictObject({
   url: z.string(),
 });
 
+const benefitValueSchema = z.strictObject({
+  label: z.string(),
+  text: z.string(),
+});
+
+const articleValueSchema = z.strictObject({
+  category: z.string(),
+  title: z.string(),
+  text: z.string(),
+  image: imageValueSchema,
+  link: linkValueSchema,
+});
+
+const persistedArticleValueSchema = articleValueSchema.extend({
+  image: persistedImageValueSchema,
+});
+
 const emailFieldValueSchema = z.union([
   z.string(),
   z.boolean(),
   linkValueSchema,
   imageValueSchema,
+  z.array(linkValueSchema),
+  z.array(benefitValueSchema),
+  z.array(articleValueSchema),
 ]);
 
 const persistedEmailFieldValueSchema = z.union([
@@ -51,6 +71,9 @@ const persistedEmailFieldValueSchema = z.union([
   z.boolean(),
   linkValueSchema,
   persistedImageValueSchema,
+  z.array(linkValueSchema),
+  z.array(benefitValueSchema),
+  z.array(persistedArticleValueSchema),
 ]);
 
 export const emailDraftSchema: z.ZodType<EmailDraft> = z.strictObject({

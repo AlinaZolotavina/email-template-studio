@@ -25,12 +25,17 @@ describe('template registry', () => {
       expect(new Set(fieldKeys).size).toBe(fieldKeys.length);
       expect(emailDraftSchema.safeParse(manifest.defaults).success).toBe(true);
       expect(() => assertTemplateManifest(manifest)).not.toThrow();
-      expect(manifest.editorSections.flatMap(({ fieldKeys }) => fieldKeys)).toEqual(
+      const editorFieldKeys = [
+        ...manifest.editorSections.flatMap(({ fieldKeys, visibilityFieldKey }) => [
+          ...fieldKeys,
+          ...(visibilityFieldKey === undefined ? [] : [visibilityFieldKey]),
+        ]),
+        ...(manifest.topLevelFieldKeys ?? []),
+      ];
+      expect(editorFieldKeys).toEqual(
         expect.arrayContaining(fieldKeys),
       );
-      expect(manifest.editorSections.flatMap(({ fieldKeys }) => fieldKeys)).toHaveLength(
-        fieldKeys.length,
-      );
+      expect(new Set(editorFieldKeys)).toEqual(new Set(fieldKeys));
     }
   });
 
@@ -64,14 +69,23 @@ describe('template registry', () => {
           expect(value.url).toMatch(/^(?:https:|mailto:)/);
         }
       }
+      const footerLinksField = manifest.fields.find(({ key }) => key === 'footerLinks');
+      expect(footerLinksField).toEqual(expect.objectContaining({ type: 'link-list' }));
+      const footerLinks = manifest.defaults.fields.footerLinks;
+      expect(Array.isArray(footerLinks)).toBe(true);
+      if (Array.isArray(footerLinks)) {
+        for (const value of footerLinks) {
+          expect('label' in value && typeof value.label === 'string').toBe(true);
+          expect('url' in value && typeof value.url === 'string').toBe(true);
+        }
+      }
     }
 
     for (const id of ['newsletter-digest', 'newsletter-promo'] as const) {
-      expect(getTemplate(id).fields).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ key: 'unsubscribeLink', type: 'link' }),
-        ]),
-      );
+      const footerLinks = getTemplateDefaults(id).fields.footerLinks;
+      expect(Array.isArray(footerLinks) && footerLinks.some(
+        (link) => 'label' in link && link.label === 'Unsubscribe',
+      )).toBe(true);
     }
   });
 

@@ -63,5 +63,33 @@ export function validateFieldValue(
     }
     case 'toggle':
       return typeof value === 'boolean' ? [] : ['Choose enabled or disabled.'];
+    case 'link-list': {
+      if (!Array.isArray(value)) return ['Link list is invalid.'];
+      const errors = value.length > field.maxItems ? [`Use no more than ${field.maxItems} items.`] : [];
+      for (const [index, item] of value.entries()) {
+        if (!('label' in item) || item.label.trim() === '') errors.push(`Link ${index + 1} label is required.`);
+        if (!('url' in item) || !validateEmailUrl(item.url, 'link').valid) errors.push(`Link ${index + 1} needs a valid URL.`);
+      }
+      return errors;
+    }
+    case 'article-list': {
+      if (!Array.isArray(value)) return ['Article list is invalid.'];
+      const errors = value.length > field.maxItems ? [`Use no more than ${field.maxItems} items.`] : [];
+      for (const [index, item] of value.entries()) {
+        if (!('image' in item) || !('link' in item)) {
+          errors.push(`Article ${index + 1} is invalid.`);
+          continue;
+        }
+        if (item.image.localPreviewUrl && !validateEmailUrl(item.image.remoteUrl, 'image').valid) {
+          errors.push(`Article ${index + 1} needs a public image URL before export.`);
+        }
+        if (!validateEmailUrl(item.link.url, 'link').valid) errors.push(`Article ${index + 1} needs a valid link URL.`);
+      }
+      return errors;
+    }
+    case 'benefit-list':
+      return Array.isArray(value) && value.length <= field.maxItems
+        ? []
+        : [`Use no more than ${field.maxItems} items.`];
   }
 }

@@ -1,4 +1,4 @@
-import { ChevronDown, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, Plus, RotateCcw, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import type {
@@ -72,6 +72,15 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
       </header>
 
       <div className={styles.groups}>
+        {(template.topLevelFieldKeys ?? []).length > 0 && (
+          <div className={styles.topLevelFields}>
+            {template.topLevelFieldKeys?.map((fieldKey) => {
+              const field = template.fields.find((candidate) => candidate.key === fieldKey);
+              if (field === undefined) throw new Error(`Unknown top-level field: ${fieldKey}`);
+              return <DynamicField key={field.key} field={field} value={valueFor(field.key, field.type)} onChange={(value) => updateField(field.key, value)} />;
+            })}
+          </div>
+        )}
         {template.editorSections.map((section, index) => {
           const sectionKey = `${template.id}:${section.id}`;
           const isOpen = sectionState[sectionKey] ?? index < 2;
@@ -81,39 +90,69 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
             return field;
           });
           const contentId = `editor-section-${template.id}-${section.id}`;
+          const sectionEnabled = section.visibilityFieldKey === undefined || draft.fields[section.visibilityFieldKey] === true;
           return (
             <section className={styles.group} key={section.id}>
               <div className={styles.groupHeader}>
                 <h3>{section.label}</h3>
-                <button
-                  className={styles.sectionToggle}
-                  type="button"
-                  aria-controls={contentId}
-                  aria-expanded={isOpen}
-                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
-                  title={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
-                  onClick={() => setSectionState((current) => ({
-                    ...current,
-                    [sectionKey]: !isOpen,
-                  }))}
-                >
-                  <ChevronDown aria-hidden="true" size={16} />
-                </button>
+                <div className={styles.sectionActions}>
+                  {section.visibilityFieldKey !== undefined && sectionEnabled && (
+                    <button className={styles.sectionAction} type="button" aria-label={`Remove ${section.label}`} title={`Remove ${section.label}`} onClick={() => updateField(section.visibilityFieldKey!, false)}>
+                      <Trash2 aria-hidden="true" size={14} />
+                    </button>
+                  )}
+                  {!sectionEnabled && section.visibilityFieldKey !== undefined ? (
+                    <button className={styles.restoreSectionButton} type="button" aria-label={`Add ${section.label}`} onClick={() => updateField(section.visibilityFieldKey!, true)}>
+                      <Plus aria-hidden="true" size={14} /> Add section
+                    </button>
+                  ) : (
+                    <button
+                      className={styles.sectionToggle}
+                      type="button"
+                      aria-controls={contentId}
+                      aria-expanded={isOpen}
+                      aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
+                      title={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
+                      onClick={() => setSectionState((current) => ({ ...current, [sectionKey]: !isOpen }))}
+                    >
+                      <ChevronDown aria-hidden="true" size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
-              {isOpen ? <div className={styles.groupFields} id={contentId}>
+              {sectionEnabled && isOpen ? <div className={styles.groupFields} id={contentId}>
                 {fields.map((field) => (
                   <DynamicField
                     key={`${template.id}:${field.key}:${editorRevision}`}
                     field={field}
                     value={valueFor(field.key, field.type)}
+                    hideLabel={section.hiddenFieldLabels?.includes(field.key)}
                     onChange={(value) => updateField(field.key, value)}
-                    onImageFile={field.type === 'image' ? async (file) => {
-                      const localPreviewUrl = await localAssets.attach(template.id, field.key, file);
-                      dispatch(imageLocalPreviewAttached({ templateId: template.id, key: field.key, localPreviewUrl }));
+                    onImageFile={field.type === 'image' || field.type === 'article-list' ? async (file, itemIndex) => {
+                      const assetKey = itemIndex === undefined ? field.key : `${field.key}.${itemIndex}`;
+                      const localPreviewUrl = await localAssets.attach(template.id, assetKey, file);
+                      if (field.type === 'article-list' && itemIndex !== undefined) {
+                        const articles = structuredClone(draft.fields[field.key]);
+                        if (Array.isArray(articles) && articles[itemIndex] && 'image' in articles[itemIndex]) {
+                          articles[itemIndex].image.localPreviewUrl = localPreviewUrl;
+                          updateField(field.key, articles);
+                        }
+                      } else {
+                        dispatch(imageLocalPreviewAttached({ templateId: template.id, key: field.key, localPreviewUrl }));
+                      }
                     } : undefined}
-                    onRemoveLocalImage={field.type === 'image' ? () => {
-                      localAssets.release(template.id, field.key);
-                      dispatch(imageLocalPreviewRemoved({ templateId: template.id, key: field.key }));
+                    onRemoveLocalImage={field.type === 'image' || field.type === 'article-list' ? (itemIndex) => {
+                      const assetKey = itemIndex === undefined ? field.key : `${field.key}.${itemIndex}`;
+                      localAssets.release(template.id, assetKey);
+                      if (field.type === 'article-list' && itemIndex !== undefined) {
+                        const articles = structuredClone(draft.fields[field.key]);
+                        if (Array.isArray(articles) && articles[itemIndex] && 'image' in articles[itemIndex]) {
+                          delete articles[itemIndex].image.localPreviewUrl;
+                          updateField(field.key, articles);
+                        }
+                      } else {
+                        dispatch(imageLocalPreviewRemoved({ templateId: template.id, key: field.key }));
+                      }
                     } : undefined}
                   />
                 ))}

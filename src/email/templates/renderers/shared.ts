@@ -1,5 +1,7 @@
 import { emailDraftSchema } from '../../schemas';
 import type {
+  ArticleValue,
+  BenefitValue,
   EmailDraft,
   EmailFieldValue,
   ImageValue,
@@ -32,9 +34,13 @@ export interface RenderSession {
   readonly warnings: RenderWarning[];
   string(key: string): string;
   boolean(key: string): boolean;
+  articles(key: string): ArticleValue[];
+  benefits(key: string): BenefitValue[];
+  links(key: string): LinkValue[];
   link(key: string): LinkValue;
   image(key: string): ImageValue;
   optionalImage(key: string, width: number, height?: number): EmailHtml | null;
+  optionalImageValue(key: string, value: ImageValue, width: number, height?: number): EmailHtml | null;
   textLink(key: string, value: LinkValue, color?: string, fontSize?: number): EmailHtml | null;
   button(key: string, value: LinkValue): EmailHtml | null;
 }
@@ -71,6 +77,27 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     return false;
   };
 
+  const articles = (key: string): ArticleValue[] => {
+    const value = draft.fields[key];
+    if (Array.isArray(value)) return value as ArticleValue[];
+    fieldError(errors, key, 'an article list');
+    return [];
+  };
+
+  const benefits = (key: string): BenefitValue[] => {
+    const value = draft.fields[key];
+    if (Array.isArray(value)) return value as BenefitValue[];
+    fieldError(errors, key, 'a benefit list');
+    return [];
+  };
+
+  const links = (key: string): LinkValue[] => {
+    const value = draft.fields[key];
+    if (Array.isArray(value)) return value as LinkValue[];
+    fieldError(errors, key, 'a link list');
+    return [];
+  };
+
   const link = (key: string): LinkValue => {
     const value = draft.fields[key];
     if (isObject(value) && 'label' in value && 'url' in value) return value;
@@ -85,8 +112,7 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     return { remoteUrl: '', alt: '' };
   };
 
-  const optionalImage = (key: string, width: number, height?: number): EmailHtml | null => {
-    const value = image(key);
+  const optionalImageValue = (key: string, value: ImageValue, width: number, height?: number): EmailHtml | null => {
     let source: string;
     try {
       source = context.resolveImageSource(value).trim();
@@ -119,6 +145,9 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
       style: { display: 'block', width: '100%', maxWidth: width },
     });
   };
+
+  const optionalImage = (key: string, width: number, height?: number): EmailHtml | null =>
+    optionalImageValue(key, image(key), width, height);
 
   const textLink = (
     key: string,
@@ -183,9 +212,13 @@ function createSession(draft: EmailDraft, context: RenderContext): RenderSession
     warnings,
     string,
     boolean,
+    articles,
+    benefits,
+    links,
     link,
     image,
     optionalImage,
+    optionalImageValue,
     textLink,
     button,
   };
@@ -229,7 +262,11 @@ export function createTemplateRenderer(
       const html = emailDocument({
         body,
         title: session.string(titleField),
-        preheader: session.string('preheader'),
+        preheader:
+          manifest.fields.some(({ key }) => key === 'showPreheader') &&
+          !session.boolean('showPreheader')
+            ? ''
+            : session.string('preheader'),
         backgroundColor: parsed.data.theme.backgroundColor,
         contentWidth: parsed.data.theme.contentWidth,
       });
@@ -317,33 +354,30 @@ export function preheaderRow(session: RenderSession): EmailHtml {
   });
 }
 
-export function linksRow(
+export function linkValuesRow(
   session: RenderSession,
-  keys: string[],
+  key: string,
   fontSize = 11,
 ): EmailHtml | null {
-  const cells = keys
-    .map((key) => {
-      const link = session.textLink(
-        key,
-        session.link(key),
-        session.draft.theme.mutedTextColor,
-        fontSize,
-      );
-      return link === null
-        ? null
-        : tableDataCell({
-            children: link,
-            align: 'center',
-            style: { padding: [0, 7] },
-          });
+  const cells = session.links(key)
+    .map((value, index) => {
+      const link = session.textLink(`${key}.${index}`, value, session.draft.theme.mutedTextColor, fontSize);
+      return link === null ? null : tableDataCell({
+        children: link,
+        align: 'center',
+        style: { padding: [0, 7] },
+      });
     })
     .filter((value): value is EmailHtml => value !== null);
   if (cells.length === 0) return null;
+  const rows: EmailHtml[] = [];
+  for (let index = 0; index < cells.length; index += 3) {
+    rows.push(tableRow(joinHtml(cells.slice(index, index + 3))));
+  }
   return tableCell({
     children: presentationTable({
       align: 'center',
-      children: tableRow(joinHtml(cells)),
+      children: joinHtml(rows),
     }),
     align: 'center',
     style: { padding: [8, 24, 0, 24] },

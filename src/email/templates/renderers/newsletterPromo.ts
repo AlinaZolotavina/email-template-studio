@@ -12,7 +12,7 @@ import {
   contentTable,
   createTemplateRenderer,
   ctaRow,
-  linksRow,
+  linkValuesRow,
   preheaderRow,
 } from './shared';
 
@@ -21,21 +21,18 @@ export const renderNewsletterPromo = createTemplateRenderer(
   'heading',
   (session) => {
     const hero = session.optionalImage('heroImage', 520, 347);
-    const benefits = session
-      .string('benefits')
-      .split(/\r?\n/)
-      .filter((item) => item.trim() !== '');
+    const benefits = session.benefits('benefits');
     const benefitRow = session.boolean('showBenefits')
       ? tableCell({
           children: presentationTable({
             width: '100%',
             children: tableRow(
               joinHtml(
-                benefits.map((benefit, index) =>
+                benefits.map((benefit) =>
                   tableDataCell({
                     children: joinHtml([
                       emailText({
-                        text: ['OK', 'FAST', 'EASY'][index] ?? 'OK',
+                        text: benefit.label,
                         style: {
                           color: session.draft.theme.accentColor,
                           fontFamily: session.draft.theme.fontFamily,
@@ -47,7 +44,7 @@ export const renderNewsletterPromo = createTemplateRenderer(
                         },
                       }),
                       emailText({
-                        text: benefit,
+                        text: benefit.text,
                         style: {
                           color: session.draft.theme.textColor,
                           fontFamily: session.draft.theme.fontFamily,
@@ -74,16 +71,16 @@ export const renderNewsletterPromo = createTemplateRenderer(
     return contentTable(
       session,
       joinHtml([
-        preheaderRow(session),
-        brandRow(session, '*'),
-        hero === null
+        session.boolean('showPreheader') ? preheaderRow(session) : null,
+        session.boolean('showHeader') ? brandRow(session, '*') : null,
+        !session.boolean('showHeader') || hero === null
           ? null
           : tableCell({
               children: hero,
               align: 'center',
               style: { padding: [0, 40, 24, 40] },
             }),
-        tableCell({
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('eyebrow').toUpperCase(),
             style: {
@@ -97,8 +94,8 @@ export const renderNewsletterPromo = createTemplateRenderer(
             },
           }),
           align: 'center',
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('heading'),
             tag: 'h1',
@@ -114,8 +111,8 @@ export const renderNewsletterPromo = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [6, 40, 8, 40] },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('offerText'),
             style: {
@@ -129,10 +126,10 @@ export const renderNewsletterPromo = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 64, 16, 64] },
-        }),
+        }) : null,
         benefitRow,
-        ctaRow(session),
-        tableCell({
+        session.boolean('showAction') ? ctaRow(session) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('termsText'),
             style: {
@@ -151,9 +148,9 @@ export const renderNewsletterPromo = createTemplateRenderer(
             borderWidth: 1,
             padding: [0, 48, 20, 48],
           },
-        }),
-        linksRow(session, ['socialEmail', 'socialInstagram', 'socialFacebook'], 12),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? linkValuesRow(session, 'footerLinks', 11) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('footerText'),
             style: {
@@ -167,9 +164,8 @@ export const renderNewsletterPromo = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [10, 32, 0, 32] },
-        }),
-        linksRow(session, ['unsubscribeLink', 'preferencesLink'], 10),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('address'),
             style: {
@@ -183,7 +179,7 @@ export const renderNewsletterPromo = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [8, 32, 24, 32] },
-        }),
+        }) : null,
       ]),
     );
   },

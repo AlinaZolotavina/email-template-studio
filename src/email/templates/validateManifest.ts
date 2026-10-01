@@ -29,6 +29,27 @@ function matchesFieldType(field: TemplateField, value: EmailFieldValue): boolean
         typeof value.label === 'string' &&
         typeof value.url === 'string'
       );
+    case 'link-list':
+      return Array.isArray(value) && value.every((item) =>
+        isRecord(item) && typeof item.label === 'string' && typeof item.url === 'string'
+      );
+    case 'benefit-list':
+      return Array.isArray(value) && value.every((item) =>
+        isRecord(item) && typeof item.label === 'string' && typeof item.text === 'string'
+      );
+    case 'article-list':
+      return Array.isArray(value) && value.every((item) =>
+        isRecord(item) &&
+        typeof item.category === 'string' &&
+        typeof item.title === 'string' &&
+        typeof item.text === 'string' &&
+        isRecord(item.image) &&
+        typeof item.image.remoteUrl === 'string' &&
+        typeof item.image.alt === 'string' &&
+        isRecord(item.link) &&
+        typeof item.link.label === 'string' &&
+        typeof item.link.url === 'string'
+      );
     case 'color':
       return false;
   }
@@ -86,15 +107,31 @@ export function assertTemplateManifest(manifest: TemplateManifest): void {
       throw new Error(`Duplicate editor section "${section.id}" in template "${manifest.id}".`);
     }
     sectionIds.add(section.id);
+    if (section.visibilityFieldKey !== undefined) {
+      if (!keys.has(section.visibilityFieldKey)) {
+        throw new Error(`Editor section "${section.id}" references unknown visibility field "${section.visibilityFieldKey}".`);
+      }
+      sectionFieldKeys.add(section.visibilityFieldKey);
+    }
     for (const fieldKey of section.fieldKeys) {
       if (!keys.has(fieldKey)) {
         throw new Error(`Editor section "${section.id}" references unknown field "${fieldKey}".`);
       }
-      if (sectionFieldKeys.has(fieldKey)) {
+      if (
+        sectionFieldKeys.has(fieldKey) &&
+        fieldKey !== section.visibilityFieldKey
+      ) {
         throw new Error(`Field "${fieldKey}" appears in more than one editor section.`);
       }
       sectionFieldKeys.add(fieldKey);
     }
+  }
+
+  for (const fieldKey of manifest.topLevelFieldKeys ?? []) {
+    if (!keys.has(fieldKey)) {
+      throw new Error(`Top-level editor field "${fieldKey}" is unknown.`);
+    }
+    sectionFieldKeys.add(fieldKey);
   }
 
   for (const fieldKey of keys) {

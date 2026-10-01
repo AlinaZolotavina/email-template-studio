@@ -48,12 +48,39 @@ export interface LinkValue {
   url: string;
 }
 
-export type EmailFieldValue = string | boolean | LinkValue | ImageValue;
+export interface ArticleValue {
+  category: string;
+  title: string;
+  text: string;
+  image: ImageValue;
+  link: LinkValue;
+}
+
+export interface BenefitValue {
+  label: string;
+  text: string;
+}
+
+export type LinkListValue = LinkValue[];
+export type ArticleListValue = ArticleValue[];
+export type BenefitListValue = BenefitValue[];
+
+export type EmailFieldValue =
+  | string
+  | boolean
+  | LinkValue
+  | ImageValue
+  | LinkListValue
+  | ArticleListValue
+  | BenefitListValue;
 export type PersistedEmailFieldValue =
   | string
   | boolean
   | LinkValue
-  | PersistedImageValue;
+  | PersistedImageValue
+  | LinkListValue
+  | (Omit<ArticleValue, 'image'> & { image: PersistedImageValue })[]
+  | BenefitListValue;
 
 export interface EmailDraft {
   templateId: TemplateId;
@@ -115,6 +142,21 @@ export interface ToggleTemplateField extends TemplateFieldBase {
   type: 'toggle';
 }
 
+export interface LinkListTemplateField extends TemplateFieldBase {
+  type: 'link-list';
+  maxItems: number;
+}
+
+export interface ArticleListTemplateField extends TemplateFieldBase {
+  type: 'article-list';
+  maxItems: number;
+}
+
+export interface BenefitListTemplateField extends TemplateFieldBase {
+  type: 'benefit-list';
+  maxItems: number;
+}
+
 export type TemplateField =
   | TextTemplateField
   | TextareaTemplateField
@@ -122,12 +164,17 @@ export type TemplateField =
   | UrlTemplateField
   | ImageTemplateField
   | LinkTemplateField
-  | ToggleTemplateField;
+  | ToggleTemplateField
+  | LinkListTemplateField
+  | ArticleListTemplateField
+  | BenefitListTemplateField;
 
 export interface TemplateEditorSection {
   id: string;
   label: string;
   fieldKeys: readonly string[];
+  hiddenFieldLabels?: readonly string[];
+  visibilityFieldKey?: string;
 }
 
 export interface RenderContext {
@@ -159,6 +206,7 @@ export interface TemplateManifest {
   defaults: EmailDraft;
   fields: readonly TemplateField[];
   editorSections: readonly TemplateEditorSection[];
+  topLevelFieldKeys?: readonly string[];
 }
 
 // Rendering is attached only after the email core exists in stages 2 and 3.

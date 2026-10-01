@@ -5,7 +5,7 @@ import {
   contentTable,
   createTemplateRenderer,
   ctaRow,
-  linksRow,
+  linkValuesRow,
   preheaderRow,
 } from './shared';
 
@@ -13,18 +13,12 @@ export const renderWelcomeSimple = createTemplateRenderer(
   welcomeSimpleManifest,
   'greeting',
   (session) => {
-    const helpLink = session.textLink(
-      'helpLink',
-      session.link('helpLink'),
-      session.draft.theme.accentColor,
-      12,
-    );
     return contentTable(
       session,
       joinHtml([
-        preheaderRow(session),
-        brandRow(session, 'AP'),
-        tableCell({
+        session.boolean('showPreheader') ? preheaderRow(session) : null,
+        session.boolean('showHeader') ? brandRow(session, 'AP') : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('greeting'),
             tag: 'h1',
@@ -40,8 +34,8 @@ export const renderWelcomeSimple = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [8, 40, 4, 40] },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('subheading'),
             style: {
@@ -55,8 +49,8 @@ export const renderWelcomeSimple = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 40, 18, 40] },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: '+',
             style: {
@@ -71,8 +65,8 @@ export const renderWelcomeSimple = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 40, 18, 40] },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showMessage') ? tableCell({
           children: emailText({
             text: session.string('body'),
             style: {
@@ -90,11 +84,10 @@ export const renderWelcomeSimple = createTemplateRenderer(
             borderRadius: 8,
             padding: [26, 52],
           },
-        }),
-        ctaRow(session),
-        tableCell({
-          children: joinHtml([
-            emailText({
+        }) : null,
+        session.boolean('showAction') ? ctaRow(session) : null,
+        session.boolean('showFooter') ? tableCell({
+          children: emailText({
               text: session.string('helpText'),
               style: {
                 color: session.draft.theme.mutedTextColor,
@@ -105,8 +98,6 @@ export const renderWelcomeSimple = createTemplateRenderer(
                 textAlign: 'center',
               },
             }),
-            helpLink,
-          ]),
           align: 'center',
           style: {
             borderColor: '#E5E7EB',
@@ -114,9 +105,9 @@ export const renderWelcomeSimple = createTemplateRenderer(
             borderWidth: 1,
             padding: [0, 40, 22, 40],
           },
-        }),
-        linksRow(session, ['socialEmail', 'socialX', 'socialChat'], 12),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? linkValuesRow(session, 'footerLinks', 11) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('footerText'),
             style: {
@@ -130,12 +121,11 @@ export const renderWelcomeSimple = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [12, 48, 0, 48] },
-        }),
-        linksRow(session, ['unsubscribeLink'], 10),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({ text: '', style: { margin: 0 } }),
           style: { padding: [0, 0, 18, 0] },
-        }),
+        }) : null,
       ]),
     );
   },

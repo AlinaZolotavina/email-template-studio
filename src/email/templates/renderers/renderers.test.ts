@@ -1,7 +1,7 @@
 import { parse } from 'parse5';
 
 import { exportRenderContext, previewRenderContext } from '../../core';
-import type { ImageValue, TemplateId } from '../../types';
+import type { ArticleValue, ImageValue, TemplateId } from '../../types';
 import { getTemplate, getTemplateDefaults } from '../../../features/templates/templateRegistry';
 
 interface TemplateCase {
@@ -155,6 +155,31 @@ describe('reference layout contracts', () => {
           expect(result.html).toContain(value.label.replace('->', '-&gt;'));
         }
       }
+      const footerLinks = draft.fields.footerLinks;
+      if (Array.isArray(footerLinks)) {
+        for (const value of footerLinks) {
+          if ('label' in value) {
+            expect(result.html).toContain(value.label.replace('->', '-&gt;'));
+          }
+        }
+      }
     },
   );
+
+  it('renders a variable number of digest articles and omits removed sections', () => {
+    const definition = getTemplate('newsletter-digest');
+    const draft = getTemplateDefaults('newsletter-digest');
+    const articles = draft.fields.articles;
+    expect(Array.isArray(articles)).toBe(true);
+    if (!Array.isArray(articles)) return;
+    const articleValues = articles as ArticleValue[];
+    draft.fields.articles = [...articleValues.slice(0, 2), ...articleValues, ...articleValues.slice(0, 1)];
+    draft.fields.showPreheader = false;
+    const result = definition.render(draft, exportRenderContext);
+
+    expect(result.errors).toEqual([]);
+    expect(result.html.match(/class="mobile-stack"/g)).toHaveLength(6);
+    expect(result.html).not.toContain('This week: product thinking, design systems, and growth.');
+    expect(result.html).not.toContain('display:none;font-size:1px');
+  });
 });

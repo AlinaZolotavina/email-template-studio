@@ -93,6 +93,32 @@ test('shows preheader edits in the email body and generated HTML', async ({ page
   );
 });
 
+test('adds and removes articles, footer links, and entire sections', async ({ page }) => {
+  await page.goto('/');
+  await openDigest(page);
+
+  await page.getByRole('button', { name: 'Expand Articles' }).click();
+  await page.getByRole('button', { name: 'Remove article 3' }).click();
+  for (let index = 0; index < 4; index += 1) {
+    await page.getByRole('button', { name: 'Add article' }).click();
+  }
+  await expect(
+    page.frameLocator('iframe[title="Email preview"]').locator('h2'),
+  ).toHaveCount(6);
+
+  await page.getByRole('button', { name: 'Expand Footer' }).click();
+  await expect(page.getByRole('group', { name: 'Link 1' })).toBeVisible();
+  await expect(page.getByText('X link', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Remove link 1' }).click();
+
+  await page.getByRole('button', { name: 'Remove Preheader' }).click();
+  await expect(page.getByRole('textbox', { name: 'Preheader' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add Preheader' })).toBeVisible();
+  await expect(page.getByLabel('Generated HTML')).not.toHaveValue(
+    /This week: product thinking, design systems, and growth\./,
+  );
+});
+
 test('restores the selected template, draft, and viewport after refresh', async ({ page }) => {
   await page.goto('/');
   await openDigest(page);

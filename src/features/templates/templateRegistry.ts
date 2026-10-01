@@ -33,7 +33,7 @@ function deepFreeze<T>(value: T): T {
 }
 
 function cloneFieldValue(value: EmailFieldValue): EmailFieldValue {
-  return typeof value === 'object' ? { ...value } : value;
+  return structuredClone(value);
 }
 
 function cloneDraft(draft: EmailDraft): EmailDraft {

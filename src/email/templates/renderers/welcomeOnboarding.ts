@@ -13,7 +13,7 @@ import {
   contentTable,
   createTemplateRenderer,
   ctaRow,
-  linksRow,
+  linkValuesRow,
   preheaderRow,
   type RenderSession,
 } from './shared';
@@ -103,9 +103,9 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
     return contentTable(
       session,
       joinHtml([
-        preheaderRow(session),
-        brandRow(session, '<>'),
-        tableCell({
+        session.boolean('showPreheader') ? preheaderRow(session) : null,
+        session.boolean('showHeader') ? brandRow(session, '<>') : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('greeting'),
             tag: 'h1',
@@ -121,8 +121,8 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [6, 32, 8, 32] },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showHeader') ? tableCell({
           children: emailText({
             text: session.string('intro'),
             style: {
@@ -136,12 +136,12 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 64, 20, 64] },
-        }),
-        step(session, 1),
-        step(session, 2),
-        step(session, 3),
-        ctaRow(session),
-        support === null
+        }) : null,
+        session.boolean('showStep1') ? step(session, 1) : null,
+        session.boolean('showStep2') ? step(session, 2) : null,
+        session.boolean('showStep3') ? step(session, 3) : null,
+        session.boolean('showAction') ? ctaRow(session) : null,
+        !session.boolean('showAction') || support === null
           ? null
           : tableCell({
               children: joinHtml([
@@ -161,7 +161,7 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
               align: 'center',
               style: { padding: [0, 40, 22, 40] },
             }),
-        tableCell({
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('signoffText'),
             style: {
@@ -180,8 +180,8 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
             borderWidth: 1,
             padding: [20, 40, 12, 40],
           },
-        }),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({
             text: session.string('footerText'),
             style: {
@@ -195,12 +195,12 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
           }),
           align: 'center',
           style: { padding: [0, 48, 0, 48] },
-        }),
-        linksRow(session, ['unsubscribeLink', 'privacyLink', 'termsLink'], 9),
-        tableCell({
+        }) : null,
+        session.boolean('showFooter') ? linkValuesRow(session, 'footerLinks', 9) : null,
+        session.boolean('showFooter') ? tableCell({
           children: emailText({ text: '', style: { margin: 0 } }),
           style: { padding: [0, 0, 18, 0] },
-        }),
+        }) : null,
       ]),
     );
   },

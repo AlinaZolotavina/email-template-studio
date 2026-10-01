@@ -55,22 +55,20 @@ describe('EditorPanel integration', () => {
     await user.clear(intro);
     await user.type(intro, 'Edited intro');
 
-    await expandSection(user, 'Article 1');
-    const articleLink = screen.getByRole('group', { name: 'Article 1 link' });
-    const label = articleLink.querySelector<HTMLInputElement>('input[id$="-label"]');
-    expect(label).not.toBeNull();
-    await user.clear(label!);
-    await user.type(label!, 'Explore');
+    await expandSection(user, 'Articles');
+    const article = screen.getByRole('group', { name: 'Article 1' });
+    await user.clear(within(article).getByLabelText('Link label'));
+    await user.type(within(article).getByLabelText('Link label'), 'Explore');
 
     await expandSection(user, 'Appearance');
     const color = screen.getByLabelText('Page background');
     await user.clear(color);
     await user.type(color, '#123456');
 
-    await expandSection(user, 'Footer');
     await user.click(screen.getByRole('checkbox', { name: 'Show article images' }));
 
-    const preferences = screen.getByRole('group', { name: 'Preferences link' });
+    await expandSection(user, 'Footer');
+    const preferences = screen.getByRole('group', { name: 'Link 4' });
     await user.clear(within(preferences).getByLabelText('Label'));
     await user.type(within(preferences).getByLabelText('Label'), 'Email settings');
     await user.clear(within(preferences).getByLabelText('URL'));
@@ -79,13 +77,12 @@ describe('EditorPanel integration', () => {
     const draft = store.getState().editor.draftsByTemplateId['newsletter-digest'];
     expect(draft?.fields.heading).toBe('Edited heading');
     expect(draft?.fields.intro).toBe('Edited intro');
-    expect(draft?.fields.article1Link).toEqual({ label: 'Explore', url: 'https://example.com/article-1' });
+    expect(Array.isArray(draft?.fields.articles) && draft.fields.articles[0]).toEqual(
+      expect.objectContaining({ link: { label: 'Explore', url: 'https://example.com/article-1' } }),
+    );
     expect(draft?.theme.backgroundColor).toBe('#123456');
     expect(draft?.fields.showArticleImages).toBe(false);
-    expect(draft?.fields.preferencesLink).toEqual({
-      label: 'Email settings',
-      url: 'https://company.test/preferences',
-    });
+    expect(Array.isArray(draft?.fields.footerLinks) && draft.fields.footerLinks[3]).toEqual({ label: 'Email settings', url: 'https://company.test/preferences' });
   }, 20_000);
 
   it('keeps invalid color out of Redux', async () => {
@@ -176,9 +173,7 @@ describe('EditorPanel integration', () => {
     expect(within(editor).getAllByRole('heading', { level: 3 }).map(({ textContent }) => textContent)).toEqual([
       'Preheader',
       'Header',
-      'Article 1',
-      'Article 2',
-      'Article 3',
+      'Articles',
       'Footer',
       'Appearance',
     ]);
@@ -192,4 +187,50 @@ describe('EditorPanel integration', () => {
     await user.click(expandHeader);
     expect(screen.getByLabelText('Heading')).toBeVisible();
   });
+
+  it('adds and removes repeated items and removable sections', async () => {
+    const user = userEvent.setup();
+    const { store } = renderEditor();
+
+    const hiddenPreheaderLabel = screen.getByText('Preheader', { selector: 'label' });
+    expect(hiddenPreheaderLabel.className).toContain('srOnly');
+
+    await expandSection(user, 'Articles');
+    await user.click(screen.getByRole('button', { name: 'Remove article 3' }));
+    for (let index = 0; index < 4; index += 1) {
+      await user.click(screen.getByRole('button', { name: 'Add article' }));
+    }
+    const digest = store.getState().editor.draftsByTemplateId['newsletter-digest'];
+    expect(Array.isArray(digest?.fields.articles) && digest.fields.articles).toHaveLength(6);
+
+    await expandSection(user, 'Footer');
+    await user.click(screen.getByRole('button', { name: 'Remove link 1' }));
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    expect(Array.isArray(digest?.fields.footerLinks) && digest.fields.footerLinks).toHaveLength(5);
+
+    await user.click(screen.getByRole('button', { name: 'Remove Preheader' }));
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.showPreheader).toBe(false);
+    expect(screen.queryByRole('textbox', { name: 'Preheader' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add Preheader' }));
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.showPreheader).toBe(true);
+  }, 20_000);
+
+  it('keeps benefits as individually editable repeated items', async () => {
+    const user = userEvent.setup();
+    const { store } = renderEditor();
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await user.click(screen.getByRole('radio', { name: /Promotional offer/ }));
+    await expandSection(user, 'Benefits');
+
+    expect(screen.getByRole('checkbox', { name: 'Show benefits' })).toBeVisible();
+    expect(screen.getAllByRole('group', { name: /Benefit \d/ })).toHaveLength(3);
+    await user.clear(within(screen.getByRole('group', { name: 'Benefit 1' })).getByLabelText('Text'));
+    await user.type(within(screen.getByRole('group', { name: 'Benefit 1' })).getByLabelText('Text'), 'A custom benefit');
+    await user.click(screen.getByRole('button', { name: 'Remove benefit 2' }));
+    await user.click(screen.getByRole('button', { name: 'Add benefit' }));
+
+    const benefits = store.getState().editor.draftsByTemplateId['newsletter-promo']?.fields.benefits;
+    expect(Array.isArray(benefits) && benefits).toHaveLength(3);
+    expect(Array.isArray(benefits) && benefits[0]).toEqual(expect.objectContaining({ text: 'A custom benefit' }));
+  }, 20_000);
 });
