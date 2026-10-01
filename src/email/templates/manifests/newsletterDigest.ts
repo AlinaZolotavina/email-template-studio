@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELDS } from './shared';
+import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 const asset = (name: string, alt: string) => ({
   remoteUrl: `https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/${name}`,
@@ -80,5 +80,30 @@ export const newsletterDigestManifest = {
     { key: 'preferencesLink', type: 'link', label: 'Preferences link', group: 'footer' },
     { key: 'unsubscribeLink', type: 'link', label: 'Unsubscribe link', group: 'footer' },
     ...THEME_COLOR_FIELDS,
+  ],
+  editorSections: [
+    { id: 'preheader', label: 'Preheader', fieldKeys: ['preheader'] },
+    { id: 'header', label: 'Header', fieldKeys: ['logo', 'heading', 'intro', 'primaryCta'] },
+    {
+      id: 'article-1',
+      label: 'Article 1',
+      fieldKeys: ['article1Image', 'article1Category', 'article1Title', 'article1Text', 'article1Link'],
+    },
+    {
+      id: 'article-2',
+      label: 'Article 2',
+      fieldKeys: ['article2Image', 'article2Category', 'article2Title', 'article2Text', 'article2Link'],
+    },
+    {
+      id: 'article-3',
+      label: 'Article 3',
+      fieldKeys: ['article3Image', 'article3Category', 'article3Title', 'article3Text', 'article3Link'],
+    },
+    {
+      id: 'footer',
+      label: 'Footer',
+      fieldKeys: ['showArticleImages', 'shareText', 'shareLink', 'socialX', 'socialLinkedIn', 'socialEmail', 'footerText', 'preferencesLink', 'unsubscribeLink'],
+    },
+    { id: 'appearance', label: 'Appearance', fieldKeys: THEME_COLOR_FIELD_KEYS },
   ],
 } as const satisfies TemplateManifest;

@@ -6,6 +6,7 @@ import {
   createTemplateRenderer,
   ctaRow,
   linksRow,
+  preheaderRow,
 } from './shared';
 
 export const renderWelcomeSimple = createTemplateRenderer(
@@ -21,6 +22,7 @@ export const renderWelcomeSimple = createTemplateRenderer(
     return contentTable(
       session,
       joinHtml([
+        preheaderRow(session),
         brandRow(session, 'AP'),
         tableCell({
           children: emailText({

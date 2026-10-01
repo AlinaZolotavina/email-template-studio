@@ -13,6 +13,7 @@ import {
   createTemplateRenderer,
   ctaRow,
   linksRow,
+  preheaderRow,
 } from './shared';
 
 export const renderNewsletterPromo = createTemplateRenderer(
@@ -73,6 +74,7 @@ export const renderNewsletterPromo = createTemplateRenderer(
     return contentTable(
       session,
       joinHtml([
+        preheaderRow(session),
         brandRow(session, '*'),
         hero === null
           ? null

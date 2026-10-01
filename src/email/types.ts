@@ -124,6 +124,12 @@ export type TemplateField =
   | LinkTemplateField
   | ToggleTemplateField;
 
+export interface TemplateEditorSection {
+  id: string;
+  label: string;
+  fieldKeys: readonly string[];
+}
+
 export interface RenderContext {
   mode: 'export' | 'preview';
   resolveImageSource(value: ImageValue): string;
@@ -152,6 +158,7 @@ export interface TemplateManifest {
   thumbnailPath: string;
   defaults: EmailDraft;
   fields: readonly TemplateField[];
+  editorSections: readonly TemplateEditorSection[];
 }
 
 // Rendering is attached only after the email core exists in stages 2 and 3.

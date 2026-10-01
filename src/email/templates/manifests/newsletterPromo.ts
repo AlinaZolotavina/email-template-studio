@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELDS } from './shared';
+import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 const promoHero = {
   remoteUrl: 'https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/promo-hero.png',
@@ -59,5 +59,17 @@ export const newsletterPromoManifest = {
     { key: 'preferencesLink', type: 'link', label: 'Preferences link', group: 'footer' },
     { key: 'address', type: 'textarea', label: 'Business address', group: 'footer', maxLength: 300, rows: 2 },
     ...THEME_COLOR_FIELDS,
+  ],
+  editorSections: [
+    { id: 'preheader', label: 'Preheader', fieldKeys: ['preheader'] },
+    { id: 'header', label: 'Header', fieldKeys: ['logo', 'heroImage', 'eyebrow', 'heading', 'offerText'] },
+    { id: 'benefits', label: 'Benefits', fieldKeys: ['showBenefits', 'benefits'] },
+    { id: 'action', label: 'Call to action', fieldKeys: ['primaryCta'] },
+    {
+      id: 'footer',
+      label: 'Footer',
+      fieldKeys: ['termsText', 'socialEmail', 'socialInstagram', 'socialFacebook', 'footerText', 'unsubscribeLink', 'preferencesLink', 'address'],
+    },
+    { id: 'appearance', label: 'Appearance', fieldKeys: THEME_COLOR_FIELD_KEYS },
   ],
 } as const satisfies TemplateManifest;

@@ -126,6 +126,9 @@ describe('reference layout contracts', () => {
 
     expect(result.errors).toEqual([]);
     expect(result.html).toContain('This week: product thinking, design systems, and growth.');
+    expect(
+      result.html.match(/This week: product thinking, design systems, and growth\./g),
+    ).toHaveLength(2);
     expect(result.html).toContain('class="mobile-stack"');
     expect(result.html).toContain('width="180" height="135"');
     expect(result.html.indexOf("Read this week's top stories")).toBeLessThan(

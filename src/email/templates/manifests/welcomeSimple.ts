@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELDS } from './shared';
+import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 export const welcomeSimpleManifest = {
   id: 'welcome-simple',
@@ -42,5 +42,17 @@ export const welcomeSimpleManifest = {
     { key: 'footerText', type: 'textarea', label: 'Footer text', group: 'footer', maxLength: 300, rows: 3 },
     { key: 'unsubscribeLink', type: 'link', label: 'Unsubscribe link', group: 'footer' },
     ...THEME_COLOR_FIELDS,
+  ],
+  editorSections: [
+    { id: 'preheader', label: 'Preheader', fieldKeys: ['preheader'] },
+    { id: 'header', label: 'Header', fieldKeys: ['logo', 'greeting', 'subheading'] },
+    { id: 'message', label: 'Message', fieldKeys: ['body'] },
+    { id: 'action', label: 'Call to action', fieldKeys: ['primaryCta'] },
+    {
+      id: 'footer',
+      label: 'Footer',
+      fieldKeys: ['helpText', 'helpLink', 'socialEmail', 'socialX', 'socialChat', 'footerText', 'unsubscribeLink'],
+    },
+    { id: 'appearance', label: 'Appearance', fieldKeys: THEME_COLOR_FIELD_KEYS },
   ],
 } as const satisfies TemplateManifest;

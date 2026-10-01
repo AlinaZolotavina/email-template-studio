@@ -56,6 +56,8 @@ export const THEME_COLOR_FIELDS = [
   },
 ] as const satisfies readonly TemplateField[];
 
+export const THEME_COLOR_FIELD_KEYS = THEME_COLOR_FIELDS.map(({ key }) => key);
+
 export function createTheme(overrides: Partial<EmailTheme> = {}): EmailTheme {
   return { ...DEFAULT_THEME, ...overrides };
 }

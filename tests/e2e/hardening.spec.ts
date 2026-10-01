@@ -90,7 +90,6 @@ test('escapes adversarial HTML and rejects executable URL protocols', async ({ p
     /&lt;script&gt;alert\(2\)&lt;\/script&gt;/,
   );
 
-  await page.locator('summary').filter({ hasText: 'Buttons' }).click();
   const primaryButton = page.getByRole('group', { name: 'Primary button' });
   await primaryButton.getByLabel('URL').fill('javascript:alert(document.domain)');
 
@@ -112,13 +111,13 @@ test('handles maximum text, extreme colors, and long valid URLs without errors',
   await page.getByLabel('Heading').fill(maximumHeading);
   await expect(page.getByText('80/80')).toBeVisible();
 
+  await page.getByRole('button', { name: 'Expand Appearance' }).click();
   const accent = page.getByLabel('Accent color', { exact: true });
   await accent.fill('#000000');
   await expect(page.getByLabel('Generated HTML')).toHaveValue(/#000000/);
   await accent.fill('#FFFFFF');
   await expect(page.getByLabel('Generated HTML')).toHaveValue(/#FFFFFF/);
 
-  await page.locator('summary').filter({ hasText: 'Buttons' }).click();
   const longUrl = `https://example.com/${'segment-'.repeat(180)}?a=1&b=2`;
   await page
     .getByRole('group', { name: 'Primary button' })

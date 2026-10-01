@@ -296,6 +296,27 @@ export function brandRow(session: RenderSession, fallbackMark: string): EmailHtm
   });
 }
 
+export function preheaderRow(session: RenderSession): EmailHtml {
+  return tableCell({
+    children: emailText({
+      text: session.string('preheader'),
+      style: {
+        color: session.draft.theme.mutedTextColor,
+        fontFamily: session.draft.theme.fontFamily,
+        fontSize: 11,
+        lineHeight: 17,
+        margin: 0,
+        textAlign: 'center',
+      },
+    }),
+    align: 'center',
+    style: {
+      padding: [10, 32, 0, 32],
+      backgroundColor: session.draft.theme.surfaceColor,
+    },
+  });
+}
+
 export function linksRow(
   session: RenderSession,
   keys: string[],

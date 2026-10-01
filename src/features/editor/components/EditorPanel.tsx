@@ -1,10 +1,9 @@
-import { RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
 import type {
   EmailFieldValue,
   ImageValue,
-  TemplateFieldGroup,
 } from '../../../email/types';
 import { useAppDispatch, useAppSelector } from '../../../app/hooks';
 import { selectSelectedDraft, selectSelectedTemplateDefinition } from '../../../app/selectors';
@@ -20,20 +19,13 @@ import {
 import { DynamicField } from './DynamicField';
 import styles from './EditorPanel.module.css';
 
-const GROUPS: { id: TemplateFieldGroup; label: string }[] = [
-  { id: 'content', label: 'Content' },
-  { id: 'brand', label: 'Brand' },
-  { id: 'images', label: 'Images' },
-  { id: 'buttons', label: 'Buttons' },
-  { id: 'footer', label: 'Footer' },
-];
-
 export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }) {
   const dispatch = useAppDispatch();
   const template = useAppSelector(selectSelectedTemplateDefinition);
   const draft = useAppSelector(selectSelectedDraft);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [editorRevision, setEditorRevision] = useState(0);
+  const [sectionState, setSectionState] = useState<Record<string, boolean>>({});
 
   const valueFor = (fieldKey: string, type: string): EmailFieldValue => {
     if (type === 'color') {
@@ -80,13 +72,35 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
       </header>
 
       <div className={styles.groups}>
-        {GROUPS.map((group, index) => {
-          const fields = template.fields.filter((field) => field.group === group.id);
-          if (fields.length === 0) return null;
+        {template.editorSections.map((section, index) => {
+          const sectionKey = `${template.id}:${section.id}`;
+          const isOpen = sectionState[sectionKey] ?? index < 2;
+          const fields = section.fieldKeys.map((fieldKey) => {
+            const field = template.fields.find((candidate) => candidate.key === fieldKey);
+            if (field === undefined) throw new Error(`Unknown editor field: ${fieldKey}`);
+            return field;
+          });
+          const contentId = `editor-section-${template.id}-${section.id}`;
           return (
-            <details className={styles.group} key={group.id} open={index < 2}>
-              <summary>{group.label}<span>{fields.length}</span></summary>
-              <div className={styles.groupFields}>
+            <section className={styles.group} key={section.id}>
+              <div className={styles.groupHeader}>
+                <h3>{section.label}</h3>
+                <button
+                  className={styles.sectionToggle}
+                  type="button"
+                  aria-controls={contentId}
+                  aria-expanded={isOpen}
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
+                  title={`${isOpen ? 'Collapse' : 'Expand'} ${section.label}`}
+                  onClick={() => setSectionState((current) => ({
+                    ...current,
+                    [sectionKey]: !isOpen,
+                  }))}
+                >
+                  <ChevronDown aria-hidden="true" size={16} />
+                </button>
+              </div>
+              {isOpen ? <div className={styles.groupFields} id={contentId}>
                 {fields.map((field) => (
                   <DynamicField
                     key={`${template.id}:${field.key}:${editorRevision}`}
@@ -103,8 +117,8 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
                     } : undefined}
                   />
                 ))}
-              </div>
-            </details>
+              </div> : null}
+            </section>
           );
         })}
       </div>

@@ -78,4 +78,28 @@ export function assertTemplateManifest(manifest: TemplateManifest): void {
       throw new Error(`Default "${key}" has no field definition in template "${manifest.id}".`);
     }
   }
+
+  const sectionIds = new Set<string>();
+  const sectionFieldKeys = new Set<string>();
+  for (const section of manifest.editorSections) {
+    if (sectionIds.has(section.id)) {
+      throw new Error(`Duplicate editor section "${section.id}" in template "${manifest.id}".`);
+    }
+    sectionIds.add(section.id);
+    for (const fieldKey of section.fieldKeys) {
+      if (!keys.has(fieldKey)) {
+        throw new Error(`Editor section "${section.id}" references unknown field "${fieldKey}".`);
+      }
+      if (sectionFieldKeys.has(fieldKey)) {
+        throw new Error(`Field "${fieldKey}" appears in more than one editor section.`);
+      }
+      sectionFieldKeys.add(fieldKey);
+    }
+  }
+
+  for (const fieldKey of keys) {
+    if (!sectionFieldKeys.has(fieldKey)) {
+      throw new Error(`Field "${fieldKey}" has no editor section in template "${manifest.id}".`);
+    }
+  }
 }

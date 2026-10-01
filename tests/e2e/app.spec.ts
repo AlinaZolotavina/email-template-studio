@@ -53,6 +53,7 @@ test('edits fields and confirms a draft reset', async ({ page }) => {
     /A browser-edited heading/,
   );
 
+  await page.getByRole('button', { name: 'Expand Appearance' }).click();
   await page.getByLabel('Accent color', { exact: true }).fill('#123456');
   await expect(page.getByLabel('Accent color', { exact: true })).toHaveValue('#123456');
 
@@ -76,6 +77,20 @@ test('switches viewport dimensions without changing generated HTML', async ({ pa
   expect(Number(await frame.getAttribute('height'))).toBeGreaterThanOrEqual(560);
   expect(await frame.getAttribute('srcdoc')).toBe(previewHtml);
   expect(await page.getByLabel('Generated HTML').inputValue()).toBe(exportHtml);
+});
+
+test('shows preheader edits in the email body and generated HTML', async ({ page }) => {
+  await page.goto('/');
+  await openDigest(page);
+
+  const preheader = 'A visible inbox preview line';
+  await page.getByRole('textbox', { name: 'Preheader' }).fill(preheader);
+
+  const previewBody = page.frameLocator('iframe[title="Email preview"]').locator('body');
+  await expect(previewBody.locator('p').getByText(preheader, { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Generated HTML')).toHaveValue(
+    new RegExp(preheader),
+  );
 });
 
 test('restores the selected template, draft, and viewport after refresh', async ({ page }) => {

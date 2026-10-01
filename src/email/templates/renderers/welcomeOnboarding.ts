@@ -14,6 +14,7 @@ import {
   createTemplateRenderer,
   ctaRow,
   linksRow,
+  preheaderRow,
   type RenderSession,
 } from './shared';
 
@@ -102,6 +103,7 @@ export const renderWelcomeOnboarding = createTemplateRenderer(
     return contentTable(
       session,
       joinHtml([
+        preheaderRow(session),
         brandRow(session, '<>'),
         tableCell({
           children: emailText({

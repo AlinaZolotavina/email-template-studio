@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELDS } from './shared';
+import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 export const welcomeOnboardingManifest = {
   id: 'welcome-onboarding',
@@ -54,5 +54,23 @@ export const welcomeOnboardingManifest = {
     { key: 'privacyLink', type: 'link', label: 'Privacy link', group: 'footer' },
     { key: 'termsLink', type: 'link', label: 'Terms link', group: 'footer' },
     ...THEME_COLOR_FIELDS,
+  ],
+  editorSections: [
+    { id: 'preheader', label: 'Preheader', fieldKeys: ['preheader'] },
+    { id: 'header', label: 'Header', fieldKeys: ['logo', 'greeting', 'intro'] },
+    { id: 'step-1', label: 'Step 1', fieldKeys: ['step1Title', 'step1Text'] },
+    { id: 'step-2', label: 'Step 2', fieldKeys: ['step2Title', 'step2Text'] },
+    { id: 'step-3', label: 'Step 3', fieldKeys: ['step3Title', 'step3Text'] },
+    {
+      id: 'action',
+      label: 'Call to action',
+      fieldKeys: ['primaryCta', 'showSupport', 'supportText', 'supportLink'],
+    },
+    {
+      id: 'footer',
+      label: 'Footer',
+      fieldKeys: ['signoffText', 'footerText', 'unsubscribeLink', 'privacyLink', 'termsLink'],
+    },
+    { id: 'appearance', label: 'Appearance', fieldKeys: THEME_COLOR_FIELD_KEYS },
   ],
 } as const satisfies TemplateManifest;

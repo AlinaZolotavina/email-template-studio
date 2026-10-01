@@ -25,6 +25,12 @@ describe('template registry', () => {
       expect(new Set(fieldKeys).size).toBe(fieldKeys.length);
       expect(emailDraftSchema.safeParse(manifest.defaults).success).toBe(true);
       expect(() => assertTemplateManifest(manifest)).not.toThrow();
+      expect(manifest.editorSections.flatMap(({ fieldKeys }) => fieldKeys)).toEqual(
+        expect.arrayContaining(fieldKeys),
+      );
+      expect(manifest.editorSections.flatMap(({ fieldKeys }) => fieldKeys)).toHaveLength(
+        fieldKeys.length,
+      );
     }
   });
 

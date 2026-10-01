@@ -14,6 +14,7 @@ import {
   createTemplateRenderer,
   ctaRow,
   linksRow,
+  preheaderRow,
   type RenderSession,
 } from './shared';
 
@@ -156,6 +157,7 @@ export const renderNewsletterDigest = createTemplateRenderer(
     contentTable(
       session,
       joinHtml([
+        preheaderRow(session),
         brandRow(session, '//'),
         tableCell({
           children: emailText({

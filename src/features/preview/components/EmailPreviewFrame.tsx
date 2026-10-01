@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { PreviewViewport } from '../previewSlice';
 import { PREVIEW_DIMENSIONS } from '../previewDimensions';
@@ -15,27 +15,19 @@ export function EmailPreviewFrame({
 }: EmailPreviewFrameProps) {
   const dimensions = PREVIEW_DIMENSIONS[viewport];
   const frameRef = useRef<HTMLIFrameElement>(null);
-  const observerRef = useRef<ResizeObserver | undefined>(undefined);
   const [frameHeight, setFrameHeight] = useState(dimensions.height);
 
-  useEffect(() => {
-    return () => observerRef.current?.disconnect();
-  }, []);
-
-  const syncFrameHeight = () => {
+  const measureFrameHeight = () => {
     const document = frameRef.current?.contentDocument;
     if (document === undefined || document === null) return;
     const contentHeight = Math.max(
       document.body?.scrollHeight ?? 0,
       document.documentElement.scrollHeight,
     );
-    setFrameHeight(Math.max(dimensions.height, contentHeight));
-
-    observerRef.current?.disconnect();
-    if (typeof ResizeObserver !== 'undefined' && document.body !== null) {
-      observerRef.current = new ResizeObserver(syncFrameHeight);
-      observerRef.current.observe(document.body);
-    }
+    const nextHeight = Math.max(dimensions.height, contentHeight);
+    setFrameHeight((currentHeight) =>
+      currentHeight === nextHeight ? currentHeight : nextHeight,
+    );
   };
 
   return (
@@ -45,7 +37,7 @@ export function EmailPreviewFrame({
         className={styles.previewFrame}
         data-testid="email-preview-frame"
         height={frameHeight}
-        onLoad={syncFrameHeight}
+        onLoad={measureFrameHeight}
         sandbox="allow-same-origin"
         scrolling="no"
         srcDoc={html}

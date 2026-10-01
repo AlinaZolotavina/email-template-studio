@@ -38,6 +38,10 @@ function containsBinary(value: unknown): boolean {
   return Object.values(value).some(containsBinary);
 }
 
+async function expandSection(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole('button', { name: `Expand ${name}` }));
+}
+
 describe('EditorPanel integration', () => {
   it('dispatches text, textarea, color, URL, link, and toggle edits', async () => {
     const user = userEvent.setup();
@@ -51,21 +55,21 @@ describe('EditorPanel integration', () => {
     await user.clear(intro);
     await user.type(intro, 'Edited intro');
 
+    await expandSection(user, 'Article 1');
     const articleLink = screen.getByRole('group', { name: 'Article 1 link' });
     const label = articleLink.querySelector<HTMLInputElement>('input[id$="-label"]');
     expect(label).not.toBeNull();
     await user.clear(label!);
     await user.type(label!, 'Explore');
 
-    await user.click(screen.getByText('Brand'));
+    await expandSection(user, 'Appearance');
     const color = screen.getByLabelText('Page background');
     await user.clear(color);
     await user.type(color, '#123456');
 
-    await user.click(screen.getByText('Images'));
+    await expandSection(user, 'Footer');
     await user.click(screen.getByRole('checkbox', { name: 'Show article images' }));
 
-    await user.click(screen.getByText('Footer'));
     const preferences = screen.getByRole('group', { name: 'Preferences link' });
     await user.clear(within(preferences).getByLabelText('Label'));
     await user.type(within(preferences).getByLabelText('Label'), 'Email settings');
@@ -87,7 +91,7 @@ describe('EditorPanel integration', () => {
   it('keeps invalid color out of Redux', async () => {
     const user = userEvent.setup();
     const { store } = renderEditor();
-    await user.click(screen.getByText('Brand'));
+    await expandSection(user, 'Appearance');
     const color = screen.getByLabelText('Page background');
     await user.clear(color);
     await user.type(color, '#12');
@@ -97,7 +101,6 @@ describe('EditorPanel integration', () => {
   it('creates local preview without storing File and preserves it across template switches', async () => {
     const user = userEvent.setup();
     const { store, localAssets } = renderEditor();
-    await user.click(screen.getByText('Brand'));
     const file = new File(['logo'], 'logo.png', { type: 'image/png' });
     await user.upload(within(screen.getByRole('group', { name: 'Logo' })).getByLabelText('Local preview'), file);
 
@@ -120,7 +123,6 @@ describe('EditorPanel integration', () => {
   it('removes a local preview and revokes its object URL', async () => {
     const user = userEvent.setup();
     const { store, localAssets } = renderEditor();
-    await user.click(screen.getByText('Brand'));
     await user.upload(
       within(screen.getByRole('group', { name: 'Logo' })).getByLabelText('Local preview'),
       new File(['logo'], 'logo.png', { type: 'image/png' }),
@@ -146,7 +148,7 @@ describe('EditorPanel integration', () => {
   it('clears an invalid local color draft when the template is reset', async () => {
     const user = userEvent.setup();
     renderEditor();
-    await user.click(screen.getByText('Brand'));
+    await expandSection(user, 'Appearance');
     const color = screen.getByLabelText('Page background');
     await user.clear(color);
     await user.type(color, '#12');
@@ -164,5 +166,30 @@ describe('EditorPanel integration', () => {
     expect(localAssets.releaseAll).toHaveBeenCalledTimes(1);
     unmount();
     expect(localAssets.releaseAll).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses template order and expands each section from its header button', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    const editor = screen.getByLabelText('Template editor');
+    expect(within(editor).getAllByRole('heading', { level: 3 }).map(({ textContent }) => textContent)).toEqual([
+      'Preheader',
+      'Header',
+      'Article 1',
+      'Article 2',
+      'Article 3',
+      'Footer',
+      'Appearance',
+    ]);
+
+    const collapseHeader = screen.getByRole('button', { name: 'Collapse Header' });
+    expect(collapseHeader).toHaveAttribute('aria-expanded', 'true');
+    await user.click(collapseHeader);
+    expect(screen.queryByLabelText('Heading')).not.toBeInTheDocument();
+    const expandHeader = screen.getByRole('button', { name: 'Expand Header' });
+    expect(expandHeader).toHaveAttribute('aria-expanded', 'false');
+    await user.click(expandHeader);
+    expect(screen.getByLabelText('Heading')).toBeVisible();
   });
 });
