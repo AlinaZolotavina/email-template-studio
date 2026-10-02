@@ -1,8 +1,6 @@
 import { getTemplateDefaults } from '../../features/templates/templateRegistry';
-import {
-  fieldChanged,
-  imageLocalPreviewAttached,
-} from '../../features/editor/editorSlice';
+import { fieldChanged, imageLocalPreviewAttached } from '../../features/editor/editorSlice';
+import { toPersistedDraft } from '../../features/editor/draftUtils';
 import { viewportChanged } from '../../features/preview/previewSlice';
 import { selectPersistableSessionState } from '../selectors';
 import { createAppStore } from '../store';
@@ -35,11 +33,18 @@ describe('session storage adapter', () => {
     draft.fields.greeting = 'Restored greeting';
     delete draft.fields.body;
     draft.fields.removedLegacyField = 'Must not survive hydration';
+
+    const persistedDraft = toPersistedDraft(draft);
+
+    expect(persistedDraft).toBeDefined();
+
     const memory = createMemoryStorage(
       JSON.stringify({
         version: 1,
         selectedTemplateId: 'welcome-simple',
-        draftsByTemplateId: { 'welcome-simple': draft },
+        draftsByTemplateId: {
+          'welcome-simple': persistedDraft,
+        },
         previewViewport: 'mobile',
       }),
     );

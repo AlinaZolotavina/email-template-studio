@@ -23,9 +23,7 @@ function removeCorruptEntry(storage: SessionStorageLike): void {
   }
 }
 
-export function createSessionStorageAdapter(
-  storage: SessionStorageLike,
-): SessionStorageAdapter {
+export function createSessionStorageAdapter(storage: SessionStorageLike): SessionStorageAdapter {
   return {
     load() {
       let raw: string | null;
@@ -51,9 +49,7 @@ export function createSessionStorageAdapter(
       }
 
       const draftsByTemplateId: PersistedSessionV1['draftsByTemplateId'] = {};
-      for (const [templateId, persistedDraft] of Object.entries(
-        parsed.data.draftsByTemplateId,
-      )) {
+      for (const [templateId, persistedDraft] of Object.entries(parsed.data.draftsByTemplateId)) {
         if (persistedDraft === undefined) continue;
         const merged = mergeDraftWithDefaults(persistedDraft);
         const clean = toPersistedDraft(merged);
