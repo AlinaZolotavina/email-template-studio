@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
+import { createSampleLogo, createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 const promoHero = {
   remoteUrl: 'https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/promo-hero.png',
@@ -26,7 +26,7 @@ export const newsletterPromoManifest = {
       showAction: true,
       showFooter: true,
       preheader: 'A limited offer created for our subscribers.',
-      logo: { remoteUrl: '', alt: 'Company logo' },
+      logo: createSampleLogo('Company logo'),
       heroImage: promoHero,
       eyebrow: 'LIMITED TIME OFFER',
       heading: '20% OFF SITEWIDE',

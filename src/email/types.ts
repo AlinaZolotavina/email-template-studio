@@ -69,6 +69,8 @@ export interface BenefitValue {
 export interface StepValue {
   title: string;
   text: string;
+  numberColor: string;
+  numberBackgroundColor: string;
 }
 
 export type LinkListValue = LinkValue[];

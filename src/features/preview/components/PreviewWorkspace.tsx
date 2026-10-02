@@ -1,4 +1,12 @@
-import { Code2, Copy, Download, Monitor, Smartphone } from 'lucide-react';
+import {
+  Code2,
+  Copy,
+  Download,
+  Minus,
+  Monitor,
+  Plus,
+  Smartphone,
+} from 'lucide-react';
 import { useMemo, useState, type KeyboardEvent } from 'react';
 
 import type { RenderIssue, RenderResult } from '../../../email/types';
@@ -20,6 +28,7 @@ interface PreviewWorkspaceProps {
   templateId: string;
   canExport: boolean;
   exportBlockReasons: string[];
+  exportWarnings?: string[];
   status?: 'loading' | 'ready';
   copyService?: (html: string) => Promise<CopyResult>;
   downloadService?: (html: string, templateId: string) => DownloadResult;
@@ -33,6 +42,10 @@ const VIEWPORTS: {
   { id: 'desktop', label: 'Desktop', icon: Monitor },
   { id: 'mobile', label: 'Mobile', icon: Smartphone },
 ];
+
+const MIN_PREVIEW_ZOOM = 50;
+const MAX_PREVIEW_ZOOM = 150;
+const PREVIEW_ZOOM_STEP = 10;
 
 function uniqueIssues(...groups: RenderIssue[][]): RenderIssue[] {
   const seen = new Set<string>();
@@ -52,11 +65,13 @@ export function PreviewWorkspace({
   templateId,
   canExport,
   exportBlockReasons,
+  exportWarnings = [],
   status = 'ready',
   copyService = copyText,
   downloadService = downloadHtml,
 }: PreviewWorkspaceProps) {
   const [copyPending, setCopyPending] = useState(false);
+  const [previewZoom, setPreviewZoom] = useState(80);
   const formattedHtml = useMemo(() => formatHtml(exportResult.html), [exportResult.html]);
   const [feedback, setFeedback] = useState<
     { html: string; kind: 'success' | 'error'; message: string } | undefined
@@ -170,24 +185,55 @@ export function PreviewWorkspace({
       <section className={styles.previewPane} aria-labelledby="preview-heading">
         <header className={styles.paneHeader}>
           <h3 id="preview-heading">Preview</h3>
-          <div className={styles.viewportTabs} role="tablist" aria-label="Preview viewport">
-            {VIEWPORTS.map(({ id, label, icon: Icon }) => (
+          <div className={styles.previewControls}>
+            <div className={styles.zoomControl} aria-label="Preview zoom" role="group">
               <button
-                aria-controls="email-preview-panel"
-                aria-selected={viewport === id}
-                className={styles.viewportTab}
-                id={`${id}-preview-tab`}
-                key={id}
-                onClick={() => onViewportChange(id)}
-                onKeyDown={(event) => handleTabKeyDown(event, id)}
-                role="tab"
-                tabIndex={viewport === id ? 0 : -1}
+                aria-label="Zoom out"
+                disabled={previewZoom === MIN_PREVIEW_ZOOM}
+                onClick={() =>
+                  setPreviewZoom((zoom) =>
+                    Math.max(MIN_PREVIEW_ZOOM, zoom - PREVIEW_ZOOM_STEP),
+                  )
+                }
                 type="button"
               >
-                <Icon aria-hidden="true" size={14} />
-                {label}
+                <Minus aria-hidden="true" size={14} />
               </button>
-            ))}
+              <span aria-label="Preview zoom level">
+                {previewZoom}%
+              </span>
+              <button
+                aria-label="Zoom in"
+                disabled={previewZoom === MAX_PREVIEW_ZOOM}
+                onClick={() =>
+                  setPreviewZoom((zoom) =>
+                    Math.min(MAX_PREVIEW_ZOOM, zoom + PREVIEW_ZOOM_STEP),
+                  )
+                }
+                type="button"
+              >
+                <Plus aria-hidden="true" size={14} />
+              </button>
+            </div>
+            <div className={styles.viewportTabs} role="tablist" aria-label="Preview viewport">
+              {VIEWPORTS.map(({ id, label, icon: Icon }) => (
+                <button
+                  aria-controls="email-preview-panel"
+                  aria-selected={viewport === id}
+                  className={styles.viewportTab}
+                  id={`${id}-preview-tab`}
+                  key={id}
+                  onClick={() => onViewportChange(id)}
+                  onKeyDown={(event) => handleTabKeyDown(event, id)}
+                  role="tab"
+                  tabIndex={viewport === id ? 0 : -1}
+                  type="button"
+                >
+                  <Icon aria-hidden="true" size={14} />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
@@ -197,7 +243,12 @@ export function PreviewWorkspace({
           id="email-preview-panel"
           role="tabpanel"
         >
-          <EmailPreviewFrame key={viewport} html={previewResult.html} viewport={viewport} />
+          <EmailPreviewFrame
+            key={viewport}
+            html={previewResult.html}
+            scale={previewZoom / 100}
+            viewport={viewport}
+          />
         </div>
       </section>
 
@@ -244,6 +295,16 @@ export function PreviewWorkspace({
               <ul>
                 {exportBlockReasons.map((reason) => (
                   <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {exportWarnings.length > 0 && (
+            <div className={styles.exportWarning} id="export-warnings">
+              <strong>Check image URLs</strong>
+              <ul>
+                {exportWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
                 ))}
               </ul>
             </div>

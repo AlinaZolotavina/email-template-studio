@@ -95,6 +95,7 @@ describe('email rendering core', () => {
     }
     expect(validateEmailUrl('mailto:hello@example.com', 'link').valid).toBe(true);
     expect(validateEmailUrl('blob:https://studio.example/id', 'image', 'preview').valid).toBe(true);
+    expect(validateEmailUrl('/template-assets/logo-sample.svg', 'image', 'preview').valid).toBe(true);
     expect(validateEmailUrl('blob:https://studio.example/id', 'image', 'export').valid).toBe(false);
     expect(validateEmailUrl('data:image/png;base64,iVBORw0KGgo=', 'image', 'preview').valid).toBe(true);
     expect(validateEmailUrl('data:image/png;base64,iVBORw0KGgo=', 'image', 'export').valid).toBe(false);

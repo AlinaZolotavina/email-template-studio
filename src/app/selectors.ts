@@ -8,6 +8,7 @@ import {
 } from '../email/core';
 import type {
   EmailDraft,
+  ImageValue,
   PersistedSessionV1,
   RenderResult,
 } from '../email/types';
@@ -29,6 +30,11 @@ export const selectSelectedDraft = createSelector(
   [selectSelectedTemplateId, selectDraftsByTemplateId],
   (templateId, drafts): EmailDraft =>
     drafts[templateId] ?? getTemplateDefaults(templateId),
+);
+
+export const selectIsSelectedDraftDirty = createSelector(
+  [selectSelectedTemplateDefinition, selectSelectedDraft],
+  (definition, draft) => JSON.stringify(draft) !== JSON.stringify(definition.defaults),
 );
 
 export interface DraftValidationResult {
@@ -85,42 +91,60 @@ export const selectPreviewRenderResult = createSelector(
   },
 );
 
-const selectHasUnexportableImage = createSelector(
-  [selectSelectedTemplateDefinition, selectSelectedDraft],
-  (definition, draft) =>
-    definition.fields.some((field) => {
-      if (field.type !== 'image') return false;
-      const value = draft.fields[field.key];
-      if (
-        typeof value !== 'object' ||
-        value === null ||
-        !('remoteUrl' in value) ||
-        typeof value.remoteUrl !== 'string'
-      ) {
-        return false;
-      }
-      const remoteUrl = value.remoteUrl.trim();
-      const hasLocalPreview =
-        'localPreviewUrl' in value &&
-        typeof value.localPreviewUrl === 'string' &&
-        value.localPreviewUrl !== '';
-      const hasValidRemote = validateEmailUrl(remoteUrl, 'image', 'export').valid;
+function imageValuesIn(value: unknown): ImageValue[] {
+  if (Array.isArray(value)) return value.flatMap(imageValuesIn);
+  if (typeof value !== 'object' || value === null) return [];
+  if (
+    'remoteUrl' in value &&
+    typeof value.remoteUrl === 'string' &&
+    'alt' in value &&
+    typeof value.alt === 'string'
+  ) {
+    return [value as ImageValue];
+  }
+  return Object.values(value).flatMap(imageValuesIn);
+}
 
-      return (remoteUrl !== '' && !hasValidRemote) || (hasLocalPreview && !hasValidRemote);
-    }),
+const selectDraftImages = createSelector([selectSelectedDraft], (draft) =>
+  Object.values(draft.fields).flatMap(imageValuesIn),
+);
+
+const selectHasInvalidImageUrl = createSelector([selectDraftImages], (images) =>
+  images.some(({ remoteUrl }) => {
+    const url = remoteUrl.trim();
+    return url !== '' && !validateEmailUrl(url, 'image', 'export').valid;
+  }),
+);
+
+const selectHasUploadedLocalPreview = createSelector(
+  [selectDraftImages],
+  (images) =>
+    images.some(({ localPreviewUrl }) =>
+      /^(?:blob:|data:image\/)/i.test(localPreviewUrl?.trim() ?? ''),
+    ),
 );
 
 export const selectExportBlockReasons = createSelector(
-  [selectDraftValidation, selectExportRenderResult, selectHasUnexportableImage],
-  (validation, renderResult, hasUnexportableImage): string[] => {
+  [selectDraftValidation, selectExportRenderResult, selectHasInvalidImageUrl],
+  (validation, renderResult, hasInvalidImageUrl): string[] => {
     const reasons = new Set<string>();
-    if (hasUnexportableImage) {
+    if (hasInvalidImageUrl) {
       reasons.add('Add a valid public image URL before exporting.');
     }
     for (const error of validation.errors) reasons.add(error);
     for (const error of renderResult.errors) reasons.add(error.message);
     return [...reasons];
   },
+);
+
+export const selectExportWarnings = createSelector(
+  [selectHasUploadedLocalPreview],
+  (hasUploadedLocalPreview): string[] =>
+    hasUploadedLocalPreview
+      ? [
+          'Local preview images are not embedded in the exported HTML. Replace them with public image URLs before using it.',
+        ]
+      : [],
 );
 
 export const selectCanExport = createSelector(

@@ -1,4 +1,13 @@
-import type { EmailTheme, TemplateField } from '../../types';
+import type { EmailTheme, ImageValue, TemplateField } from '../../types';
+
+export function createSampleLogo(alt: string): ImageValue {
+  return {
+    remoteUrl:
+      'https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/logo-sample.svg',
+    localPreviewUrl: `${import.meta.env.BASE_URL}template-assets/logo-sample.svg`,
+    alt,
+  };
+}
 
 export const DEFAULT_THEME: EmailTheme = {
   backgroundColor: '#F3F4F6',

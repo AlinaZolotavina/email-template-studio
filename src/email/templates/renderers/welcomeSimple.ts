@@ -50,22 +50,6 @@ export const renderWelcomeSimple = createTemplateRenderer(
           align: 'center',
           style: { padding: [0, 40, 18, 40] },
         }) : null,
-        session.boolean('showHeader') ? tableCell({
-          children: emailText({
-            text: '+',
-            style: {
-              color: '#FB7185',
-              fontFamily: session.draft.theme.fontFamily,
-              fontSize: 22,
-              fontWeight: 700,
-              lineHeight: 24,
-              margin: 0,
-              textAlign: 'center',
-            },
-          }),
-          align: 'center',
-          style: { padding: [0, 40, 18, 40] },
-        }) : null,
         session.boolean('showMessage') ? tableCell({
           children: emailText({
             text: session.string('body'),

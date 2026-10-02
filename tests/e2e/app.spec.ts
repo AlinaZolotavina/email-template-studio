@@ -6,13 +6,19 @@ async function openDigest(page: Page) {
   await page.getByRole('radio', { name: /Weekly digest/ }).click();
 }
 
+async function returnToTemplates(page: Page) {
+  await page.getByRole('button', { name: 'Templates' }).click();
+  const confirm = page.getByRole('button', { name: 'Leave and reset' });
+  if (await confirm.count()) await confirm.click();
+}
+
 test('selects a template in the workspace shell', async ({ page }) => {
   await page.goto('/');
 
   await expect(
     page.getByRole('heading', { level: 1, name: 'Email Template Studio' }),
   ).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Email creation, simplified' })).toBeVisible();
 
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
@@ -40,6 +46,17 @@ test('keeps every panel accessible on a mobile viewport', async ({ page }) => {
   expect(bodyWidth).toBeLessThanOrEqual(390);
 });
 
+test('scrolls the template catalogue on a desktop viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await page.goto('/#/templates');
+
+  const catalogue = page.getByRole('main');
+  await expect.poll(() => catalogue.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await catalogue.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect.poll(() => catalogue.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(page.getByRole('heading', { name: 'Templates' })).toBeVisible();
+});
+
 test('edits fields and confirms a draft reset', async ({ page }) => {
   await page.goto('/');
   await openDigest(page);
@@ -58,9 +75,20 @@ test('edits fields and confirms a draft reset', async ({ page }) => {
   await expect(page.getByLabel('Accent color', { exact: true })).toHaveValue('#123456');
 
   await page.getByRole('button', { name: 'Reset draft' }).click();
-  await expect(page.getByRole('group', { name: 'Confirm draft reset' })).toBeVisible();
+  await expect(page.getByRole('alertdialog', { name: 'Reset this draft?' })).toBeVisible();
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await expect(page.getByLabel('Heading')).toHaveValue('Weekly digest');
+});
+
+test('leaves a clean template without showing a reset dialog', async ({ page }) => {
+  await page.goto('/');
+  await openDigest(page);
+
+  await expect(page.getByRole('button', { name: 'Reset draft' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Templates' }).click();
+
+  await expect(page).toHaveURL(/#\/templates$/);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
 
 test('switches viewport dimensions without changing generated HTML', async ({ page }) => {
@@ -157,28 +185,28 @@ test('restores the selected template, draft, and viewport after refresh', async 
   );
 });
 
-test('keeps drafts isolated while switching between templates', async ({ page }) => {
+test('resets each draft when returning to templates', async ({ page }) => {
   await page.goto('/');
   await openDigest(page);
   await page.getByLabel('Heading').fill('Digest-only heading');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await returnToTemplates(page);
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
   await page.getByLabel('Greeting').fill('Welcome-only greeting');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await returnToTemplates(page);
   await page.getByRole('tab', { name: 'Newsletter' }).click();
   await page.getByRole('radio', { name: /Weekly digest/ }).click();
-  await expect(page.getByLabel('Heading')).toHaveValue('Digest-only heading');
+  await expect(page.getByLabel('Heading')).toHaveValue('Weekly digest');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await returnToTemplates(page);
   await page.getByRole('tab', { name: 'Welcome' }).click();
   await page.getByRole('radio', { name: /Simple welcome/ }).click();
-  await expect(page.getByLabel('Greeting')).toHaveValue('Welcome-only greeting');
+  await expect(page.getByLabel('Greeting')).toHaveValue('Welcome!');
 });
 
-test('blocks local-only images, then copies and downloads the exact export HTML', async ({
+test('warns about local-only images, then copies and downloads the exact export HTML', async ({
   context,
   page,
 }) => {
@@ -191,10 +219,10 @@ test('blocks local-only images, then copies and downloads the exact export HTML'
     .locator('input[type="file"]')
     .setInputFiles('public/template-thumbnails/newsletter-digest.png');
 
-  await expect(page.getByRole('button', { name: 'Copy HTML' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Download .html' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copy HTML' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Download .html' })).toBeEnabled();
   await expect(
-    page.getByText('Add a valid public image URL before exporting.'),
+    page.getByText(/Local preview images are not embedded/),
   ).toBeVisible();
   await logoGroup
     .getByLabel('Public image URL')

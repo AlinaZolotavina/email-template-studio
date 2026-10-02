@@ -6,11 +6,13 @@ import styles from './PreviewWorkspace.module.css';
 
 interface EmailPreviewFrameProps {
   html: string;
+  scale: number;
   viewport: PreviewViewport;
 }
 
 export function EmailPreviewFrame({
   html,
+  scale,
   viewport,
 }: EmailPreviewFrameProps) {
   const dimensions = PREVIEW_DIMENSIONS[viewport];
@@ -32,18 +34,28 @@ export function EmailPreviewFrame({
 
   return (
     <div className={styles.frameScroller}>
-      <iframe
-        ref={frameRef}
-        className={styles.previewFrame}
-        data-testid="email-preview-frame"
-        height={frameHeight}
-        onLoad={measureFrameHeight}
-        sandbox="allow-same-origin"
-        scrolling="no"
-        srcDoc={html}
-        title="Email preview"
-        width={dimensions.width}
-      />
+      <div
+        className={styles.frameCanvas}
+        data-testid="email-preview-canvas"
+        style={{
+          height: frameHeight * scale,
+          width: dimensions.width * scale,
+        }}
+      >
+        <iframe
+          ref={frameRef}
+          className={styles.previewFrame}
+          data-testid="email-preview-frame"
+          height={frameHeight}
+          onLoad={measureFrameHeight}
+          sandbox="allow-same-origin"
+          scrolling="no"
+          srcDoc={html}
+          style={{ transform: `scale(${scale})` }}
+          title="Email preview"
+          width={dimensions.width}
+        />
+      </div>
     </div>
   );
 }

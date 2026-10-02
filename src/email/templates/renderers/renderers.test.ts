@@ -191,13 +191,15 @@ describe('reference layout contracts', () => {
     const definition = getTemplate('welcome-onboarding');
     const draft = getTemplateDefaults('welcome-onboarding');
     const steps = draft.fields.steps as StepValue[];
-    draft.fields.steps = [...steps.slice(0, 2), { title: 'Invite the team', text: 'Bring collaborators in.' }];
+    draft.fields.steps = [...steps.slice(0, 2), { title: 'Invite the team', text: 'Bring collaborators in.', numberColor: '#7C3AED', numberBackgroundColor: '#F3F1FE' }];
 
     const result = definition.render(draft, exportRenderContext);
 
     expect(result.errors).toEqual([]);
     expect(result.html).toContain('Invite the team');
-    expect(result.html.match(/background-color:#EFF6FF/g)).toHaveLength(3);
+    expect(result.html.match(/background-color:#EFF6FF/g)).toHaveLength(2);
+    expect(result.html).toContain('background-color:#F3F1FE');
+    expect(result.html).toContain('color:#7C3AED');
     expect(result.html).toContain('border-radius:999px');
     expect(result.html).toContain('width="38"');
   });

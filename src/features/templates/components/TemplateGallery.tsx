@@ -1,4 +1,4 @@
-import { AlertCircle, ImageOff, LoaderCircle } from 'lucide-react';
+import { AlertCircle, ImageOff, LoaderCircle, Search } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent } from 'react';
 
 import type {
@@ -40,11 +40,16 @@ export function TemplateGallery({
   const [activeCategory, setActiveCategory] = useState<TemplateCategory>(
     selectedTemplate?.category ?? 'newsletter',
   );
+  const [searchQuery, setSearchQuery] = useState('');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const templateRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const filteredTemplates = templates.filter(
-    (template) => template.category === activeCategory,
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const filteredTemplates = templates.filter((template) =>
+    template.category === activeCategory &&
+    (normalizedQuery === '' ||
+      template.name.toLocaleLowerCase().includes(normalizedQuery) ||
+      template.description.toLocaleLowerCase().includes(normalizedQuery)),
   );
   const categoryHasSelection = filteredTemplates.some(
     (template) => template.id === selectedTemplateId,
@@ -74,9 +79,16 @@ export function TemplateGallery({
     <section className={styles.gallery} aria-labelledby="templates-heading">
       <header className={styles.header}>
         <h2 id="templates-heading">Templates</h2>
-        {status === 'ready' && templates.length > 0 ? (
-          <span aria-label={`${templates.length} templates`}>{templates.length}</span>
-        ) : null}
+        {status === 'ready' && templates.length > 0 ? <label className={styles.search}>
+          <Search aria-hidden="true" size={19} />
+          <span className={styles.srOnly}>Search templates</span>
+          <input
+            type="search"
+            placeholder="Search templates..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </label> : null}
       </header>
 
       {status === 'loading' ? (
@@ -102,26 +114,28 @@ export function TemplateGallery({
 
       {status === 'ready' && templates.length > 0 ? (
         <>
-          <div className={styles.tabs} role="tablist" aria-label="Template categories">
-            {categories.map((category, index) => {
-              const isActive = category.id === activeCategory;
-              return (
-                <button
-                  key={category.id}
-                  ref={(element) => { tabRefs.current[index] = element; }}
-                  type="button"
-                  role="tab"
-                  id={`template-tab-${category.id}`}
-                  aria-selected={isActive}
-                  aria-controls={`template-panel-${category.id}`}
-                  tabIndex={isActive ? 0 : -1}
-                  onClick={() => setActiveCategory(category.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                >
-                  {category.label}
-                </button>
-              );
-            })}
+          <div className={styles.categoryRow}>
+            <div className={styles.tabs} role="tablist" aria-label="Template categories">
+              {categories.map((category, index) => {
+                const isActive = category.id === activeCategory;
+                return (
+                  <button
+                    key={category.id}
+                    ref={(element) => { tabRefs.current[index] = element; }}
+                    type="button"
+                    role="tab"
+                    id={`template-tab-${category.id}`}
+                    aria-selected={isActive}
+                    aria-controls={`template-panel-${category.id}`}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => setActiveCategory(category.id)}
+                    onKeyDown={(event) => handleTabKeyDown(event, index)}
+                  >
+                    {category.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div
@@ -130,7 +144,9 @@ export function TemplateGallery({
             role="tabpanel"
             aria-labelledby={`template-tab-${activeCategory}`}
           >
-            <div role="radiogroup" aria-label={`${activeCategory} templates`}>
+            {filteredTemplates.length === 0 ? (
+              <div className={styles.noResults} role="status">No matching templates</div>
+            ) : <div role="radiogroup" aria-label={`${activeCategory} templates`}>
               {filteredTemplates.map((template, index) => {
                 const isSelected = template.id === selectedTemplateId;
                 return (
@@ -158,7 +174,7 @@ export function TemplateGallery({
                   </button>
                 );
               })}
-            </div>
+            </div>}
           </div>
         </>
       ) : null}

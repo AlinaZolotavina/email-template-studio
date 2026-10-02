@@ -1,11 +1,11 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
+import { createSampleLogo, createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 export const welcomeOnboardingManifest = {
   id: 'welcome-onboarding',
   name: 'Onboarding steps',
   category: 'welcome',
-  description: 'A welcome email that guides readers through three first steps.',
+  description: 'A welcome email with a customizable sequence of onboarding steps.',
   thumbnailPath: 'template-thumbnails/welcome-onboarding.png',
   defaults: {
     templateId: 'welcome-onboarding',
@@ -17,13 +17,13 @@ export const welcomeOnboardingManifest = {
       showAction: true,
       showFooter: true,
       preheader: 'Three quick steps to get value from your new workspace.',
-      logo: { remoteUrl: '', alt: 'Company logo' },
+      logo: createSampleLogo('Company logo'),
       greeting: 'Welcome aboard!',
       intro: "We're excited to have you here. Follow these 3 simple steps to get started.",
       steps: [
-        { title: 'Complete your profile', text: 'Add a few details about yourself so we can personalize your experience.' },
-        { title: 'Set up your workspace', text: 'Create your workspace and invite your team to collaborate.' },
-        { title: 'Take your first action', text: 'Explore key features and take your first step to success.' },
+        { title: 'Complete your profile', text: 'Add a few details about yourself so we can personalize your experience.', numberColor: '#0369A1', numberBackgroundColor: '#EFF6FF' },
+        { title: 'Set up your workspace', text: 'Create your workspace and invite your team to collaborate.', numberColor: '#0369A1', numberBackgroundColor: '#EFF6FF' },
+        { title: 'Take your first action', text: 'Explore key features and take your first step to success.', numberColor: '#0369A1', numberBackgroundColor: '#EFF6FF' },
       ],
       primaryCta: { label: 'Get started', url: 'https://example.com/onboarding', backgroundColor: '#0369A1', textColor: '#FFFFFF' },
       showSupport: true,

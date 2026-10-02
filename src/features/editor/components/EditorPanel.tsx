@@ -1,12 +1,17 @@
 import { ChevronDown, Plus, RotateCcw, SlidersHorizontal, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import type {
   EmailFieldValue,
   ImageValue,
 } from '../../../email/types';
 import { useAppDispatch, useAppSelector } from '../../../app/hooks';
-import { selectSelectedDraft, selectSelectedTemplateDefinition } from '../../../app/selectors';
+import {
+  selectIsSelectedDraftDirty,
+  selectSelectedDraft,
+  selectSelectedTemplateDefinition,
+} from '../../../app/selectors';
 import type { LocalAssetsManager } from '../../../infrastructure/localAssets';
 import {
   draftReset,
@@ -19,13 +24,40 @@ import {
 import { DynamicField } from './DynamicField';
 import styles from './EditorPanel.module.css';
 
-export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }) {
+interface EditorPanelProps {
+  localAssets: LocalAssetsManager;
+  onLocalDirtyStateChange?: (dirty: boolean) => void;
+}
+
+export function EditorPanel({
+  localAssets,
+  onLocalDirtyStateChange,
+}: EditorPanelProps) {
   const dispatch = useAppDispatch();
   const template = useAppSelector(selectSelectedTemplateDefinition);
   const draft = useAppSelector(selectSelectedDraft);
+  const isDraftDirty = useAppSelector(selectIsSelectedDraftDirty);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [editorRevision, setEditorRevision] = useState(0);
   const [sectionState, setSectionState] = useState<Record<string, boolean>>({});
+  const [locallyDirtyFields, setLocallyDirtyFields] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const locallyDirtyFieldsRef = useRef(locallyDirtyFields);
+
+  useEffect(
+    () => () => onLocalDirtyStateChange?.(false),
+    [onLocalDirtyStateChange],
+  );
+
+  const setFieldLocalDirty = (fieldKey: string, dirty: boolean) => {
+    const next = new Set(locallyDirtyFieldsRef.current);
+    if (dirty) next.add(fieldKey);
+    else next.delete(fieldKey);
+    locallyDirtyFieldsRef.current = next;
+    setLocallyDirtyFields(next);
+    onLocalDirtyStateChange?.(next.size > 0);
+  };
 
   const valueFor = (fieldKey: string, type: string): EmailFieldValue => {
     if (type === 'color') {
@@ -58,6 +90,10 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
     localAssets.releaseTemplate(template.id);
     dispatch(draftReset(template.id));
     setEditorRevision((revision) => revision + 1);
+    const emptyLocalFields = new Set<string>();
+    locallyDirtyFieldsRef.current = emptyLocalFields;
+    setLocallyDirtyFields(emptyLocalFields);
+    onLocalDirtyStateChange?.(false);
     setConfirmingReset(false);
   };
 
@@ -77,7 +113,7 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
             {template.topLevelFieldKeys?.map((fieldKey) => {
               const field = template.fields.find((candidate) => candidate.key === fieldKey);
               if (field === undefined) throw new Error(`Unknown top-level field: ${fieldKey}`);
-              return <DynamicField key={field.key} field={field} value={valueFor(field.key, field.type)} onChange={(value) => updateField(field.key, value)} />;
+              return <DynamicField key={field.key} field={field} value={valueFor(field.key, field.type)} onChange={(value) => updateField(field.key, value)} onLocalDirtyChange={(dirty) => setFieldLocalDirty(field.key, dirty)} />;
             })}
           </div>
         )}
@@ -129,6 +165,7 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
                     value={valueFor(field.key, field.type)}
                     hideLabel={field.visibilityFieldKey !== undefined || section.hiddenFieldLabels?.includes(field.key)}
                     onChange={(value) => updateField(field.key, value)}
+                    onLocalDirtyChange={(dirty) => setFieldLocalDirty(field.key, dirty)}
                     onImageFile={field.type === 'image' || field.type === 'article-list' ? async (file, itemIndex) => {
                       const assetKey = itemIndex === undefined ? field.key : `${field.key}.${itemIndex}`;
                       const localPreviewUrl = await localAssets.attach(template.id, assetKey, file);
@@ -183,18 +220,23 @@ export function EditorPanel({ localAssets }: { localAssets: LocalAssetsManager }
       </div>
 
       <div className={styles.resetArea}>
-        {!confirmingReset ? (
-          <button className={styles.resetButton} type="button" onClick={() => setConfirmingReset(true)}>
-            <RotateCcw aria-hidden="true" size={15} /> Reset draft
-          </button>
-        ) : (
-          <div className={styles.resetConfirm} role="group" aria-label="Confirm draft reset">
-            <p>Reset this template to its defaults?</p>
-            <button type="button" onClick={resetDraft}>Reset</button>
-            <button type="button" onClick={() => setConfirmingReset(false)}>Cancel</button>
-          </div>
-        )}
+        <button
+          className={styles.resetButton}
+          disabled={!isDraftDirty && locallyDirtyFields.size === 0}
+          type="button"
+          onClick={() => setConfirmingReset(true)}
+        >
+          <RotateCcw aria-hidden="true" size={15} /> Reset draft
+        </button>
       </div>
+      <ConfirmDialog
+        confirmLabel="Reset"
+        description="This will restore every field in this template to its default value."
+        onCancel={() => setConfirmingReset(false)}
+        onConfirm={resetDraft}
+        open={confirmingReset}
+        title="Reset this draft?"
+      />
     </div>
   );
 }

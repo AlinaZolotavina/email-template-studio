@@ -3,9 +3,11 @@
 }
 
 .panelHeader {
+  padding-bottom: 14px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  border-bottom: 1px solid #eceef5;
 }
 
 .panelHeader h2,
@@ -14,7 +16,7 @@
 }
 
 .panelHeader h2 {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.35;
 }
 
@@ -25,12 +27,11 @@
 }
 
 .groups {
-  margin-top: 14px;
-  border-top: 1px solid var(--color-border);
+  margin-top: 2px;
 }
 
 .group {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid #e9ebf2;
 }
 
 .topLevelFields {
@@ -39,13 +40,13 @@
 }
 
 .groupHeader {
-  min-height: 42px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   color: var(--color-text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -99,7 +100,7 @@
 .restoreSectionButton:focus-visible,
 .addItemButton:focus-visible,
 .removeItemButton:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid #9d83ff;
   outline-offset: 2px;
 }
 
@@ -136,7 +137,7 @@
   min-width: 0;
   margin: 0;
   padding: 10px;
-  background: #eff6f5;
+  background: #f3f1fe;
   border: 0;
   border-radius: 6px;
 }
@@ -196,7 +197,7 @@
 }
 
 .groupFields {
-  padding: 2px 0 14px;
+  padding: 4px 0 18px;
   display: grid;
   gap: 14px;
 }
@@ -204,7 +205,7 @@
 .fieldBlock {
   min-width: 0;
   padding: 10px;
-  background: #eff6f5;
+  background: #f3f1fe;
   border: 0;
   border-radius: 6px;
 }
@@ -231,7 +232,7 @@
 
 .fieldset {
   padding: 10px;
-  background: #eff6f5;
+  background: #f3f1fe;
   border: 0;
   border-radius: 6px;
 }
@@ -258,13 +259,13 @@
 .textInput {
   width: 100%;
   min-width: 0;
-  min-height: 34px;
+  min-height: 40px;
   margin-top: 4px;
   padding: 7px 8px;
   color: var(--color-text);
   background: #ffffff;
-  border: 1px solid #aeb9bd;
-  border-radius: 4px;
+  border: 1px solid #cbd2df;
+  border-radius: 6px;
   font-size: 12px;
   line-height: 1.4;
 }
@@ -277,9 +278,8 @@ textarea.textInput {
 .colorPicker:focus,
 .toggleField input:focus,
 .iconButton:focus,
-.resetButton:focus,
-.resetConfirm button:focus {
-  outline: 2px solid var(--color-focus);
+.resetButton:focus {
+  outline: 2px solid #9d83ff;
   outline-offset: 1px;
 }
 
@@ -309,12 +309,12 @@ textarea.textInput {
 
 .colorPicker {
   width: 36px;
-  height: 34px;
+  height: 40px;
   margin-top: 4px;
   padding: 2px;
   background: #ffffff;
-  border: 1px solid #aeb9bd;
-  border-radius: 4px;
+  border: 1px solid #cbd2df;
+  border-radius: 6px;
 }
 
 .toggleField {
@@ -379,8 +379,7 @@ textarea.textInput {
 
 .fileButton,
 .iconButton,
-.resetButton,
-.resetConfirm button {
+.resetButton {
   min-height: 32px;
   cursor: pointer;
   display: inline-flex;
@@ -395,6 +394,11 @@ textarea.textInput {
   font-weight: 650;
 }
 
+.resetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .fileButton,
 .resetButton {
   padding: 6px 9px;
@@ -406,35 +410,21 @@ textarea.textInput {
 }
 
 .resetArea {
-  padding-top: 16px;
+  padding-top: 18px;
 }
 
 .resetButton {
   color: #8d241c;
+  background: #fff7f6;
+  border-color: #f1c7c3;
+  border-radius: 7px;
 }
 
-.resetConfirm {
-  padding: 10px;
-  background: #fff7ed;
-  border: 1px solid #e9cba5;
-  border-radius: 6px;
-}
-
-.resetConfirm p {
-  margin: 0 0 8px;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.resetConfirm button {
-  margin-right: 6px;
-  padding: 5px 9px;
-}
-
-.resetConfirm button:first-of-type {
-  color: #ffffff;
-  background: #9f2d24;
-  border-color: #9f2d24;
+.resetButton:focus,
+.resetButton:focus-visible {
+  border-color: #8d241c;
+  outline: 2px solid #c26114;
+  outline-offset: 1px;
 }
 
 @media (max-width: 1080px) {
@@ -450,3 +440,4 @@ textarea.textInput {
     display: block;
   }
 }
+  border-bottom: 1px solid #eceef5;

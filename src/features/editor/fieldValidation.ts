@@ -1,5 +1,5 @@
 import { isHexColor, validateEmailUrl } from '../../email/core';
-import type { ArticleValue, EmailFieldValue, ImageValue, TemplateField } from '../../email/types';
+import type { EmailFieldValue, ImageValue, TemplateField } from '../../email/types';
 
 export const ACCEPTED_IMAGE_TYPES = [
   'image/png',
@@ -72,9 +72,6 @@ export function validateFieldValue(
       if (image.remoteUrl.trim() !== '' && !validateEmailUrl(image.remoteUrl, 'image').valid) {
         errors.push('Enter an absolute HTTP or HTTPS image URL.');
       }
-      if (image.localPreviewUrl && !validateEmailUrl(image.remoteUrl, 'image').valid) {
-        errors.push('Add a public image URL before export.');
-      }
       return errors;
     }
     case 'toggle':
@@ -96,11 +93,7 @@ export function validateFieldValue(
           errors.push(`Article ${index + 1} is invalid.`);
           continue;
         }
-        const article = item as ArticleValue;
-        if (article.image.localPreviewUrl && !validateEmailUrl(article.image.remoteUrl, 'image').valid) {
-          errors.push(`Article ${index + 1} needs a public image URL before export.`);
-        }
-        if (!validateEmailUrl(article.link.url, 'link').valid) errors.push(`Article ${index + 1} needs a valid link URL.`);
+        if (!validateEmailUrl(item.link.url, 'link').valid) errors.push(`Article ${index + 1} needs a valid link URL.`);
       }
       return errors;
     }
@@ -109,6 +102,14 @@ export function validateFieldValue(
         ? []
         : [`Use no more than ${field.maxItems} items.`];
     case 'step-list':
-      return Array.isArray(value) ? [] : ['Step list is invalid.'];
+      if (!Array.isArray(value)) return ['Step list is invalid.'];
+      return value.flatMap((item, index) => {
+        if (!('numberColor' in item) || !('numberBackgroundColor' in item)) {
+          return [`Step ${index + 1} colors are invalid.`];
+        }
+        return isHexColor(item.numberColor) && isHexColor(item.numberBackgroundColor)
+          ? []
+          : [`Step ${index + 1} colors must use six-digit HEX values.`];
+      });
   }
 }

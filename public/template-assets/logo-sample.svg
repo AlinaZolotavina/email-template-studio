@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100" role="img" aria-labelledby="title description">
+  <title id="title">Logo sample</title>
+  <desc id="description">Two blue mountain shapes below a warm sun, with Logo Sample text.</desc>
+  <defs>
+    <linearGradient id="mountainPrimary" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7DA8FF"/>
+      <stop offset="1" stop-color="#5E8EF2"/>
+    </linearGradient>
+    <linearGradient id="mountainSecondary" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8D0FF"/>
+      <stop offset="1" stop-color="#83A9F5"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFD69B"/>
+      <stop offset="1" stop-color="#FFBD69"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0.45" stop-color="#17213F"/>
+      <stop offset="1" stop-color="#97A3B8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="177" cy="20" r="12" fill="url(#sun)"/>
+  <path d="M94 57c-5 0-7-5-4-9l39-50c3-4 9-4 12 0l39 50c3 4 0 9-5 9H94Z" fill="url(#mountainPrimary)"/>
+  <path d="M151 57c-5 0-7-5-4-9l24-29c3-4 8-4 11 0l24 29c3 4 1 9-4 9h-51Z" fill="url(#mountainSecondary)" fill-opacity=".82"/>
+  <text x="150" y="88" fill="url(#wordmark)" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" letter-spacing="1" text-anchor="middle">LOGO SAMPLE</text>
+</svg>

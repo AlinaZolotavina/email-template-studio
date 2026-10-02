@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 
 import { App } from '../../../app/App';
 import { createAppStore } from '../../../app/store';
+import { getTemplateDefaults } from '../../templates/templateRegistry';
 import type { LocalAssetsManager } from '../../../infrastructure/localAssets';
 
 beforeEach(() => {
@@ -42,7 +43,23 @@ async function expandSection(user: ReturnType<typeof userEvent.setup>, name: str
   await user.click(screen.getByRole('button', { name: `Expand ${name}` }));
 }
 
+async function leaveEditor(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Templates' }));
+  const confirm = screen.queryByRole('button', { name: 'Leave and reset' });
+  if (confirm !== null) await user.click(confirm);
+}
+
 describe('EditorPanel integration', () => {
+  it('disables reset until the draft changes', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    const reset = screen.getByRole('button', { name: 'Reset draft' });
+    expect(reset).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Heading'), ' changed');
+    expect(reset).toBeEnabled();
+  });
+
   it('dispatches text, textarea, color, URL, link, and toggle edits', async () => {
     const user = userEvent.setup();
     const { store } = renderEditor();
@@ -96,7 +113,7 @@ describe('EditorPanel integration', () => {
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.theme.backgroundColor).toBe('#F3F4F6');
   });
 
-  it('creates local preview without storing File and preserves it across template switches', async () => {
+  it('creates local preview without storing File and clears it on editor exit', async () => {
     const user = userEvent.setup();
     const { store, localAssets } = renderEditor();
     const file = new File(['logo'], 'logo.png', { type: 'image/png' });
@@ -104,18 +121,24 @@ describe('EditorPanel integration', () => {
 
     const logo = store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo;
     expect(localAssets.attach).toHaveBeenCalledWith('newsletter-digest', 'logo', file);
-    expect(logo).toEqual({ remoteUrl: '', alt: 'Weekly Digest logo', localPreviewUrl: 'blob:local-logo' });
+    expect(logo).toEqual({
+      remoteUrl: 'https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/logo-sample.svg',
+      alt: 'Weekly Digest logo',
+      localPreviewUrl: 'blob:local-logo',
+    });
     expect(containsBinary(store.getState())).toBe(false);
     expect(JSON.stringify(store.getState())).not.toContain('logo.png');
 
-    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await leaveEditor(user);
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     await user.click(screen.getByRole('radio', { name: /Simple welcome/ }));
-    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await leaveEditor(user);
     await user.click(screen.getByRole('tab', { name: 'Newsletter' }));
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
-    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual(logo);
-    expect(localAssets.release).not.toHaveBeenCalled();
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual(
+      getTemplateDefaults('newsletter-digest').fields.logo,
+    );
+    expect(localAssets.releaseTemplate).toHaveBeenCalledWith('newsletter-digest');
   });
 
   it('removes a local preview and revokes its object URL', async () => {
@@ -127,7 +150,10 @@ describe('EditorPanel integration', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Remove local preview for Logo' }));
     expect(localAssets.release).toHaveBeenCalledWith('newsletter-digest', 'logo');
-    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual({ remoteUrl: '', alt: 'Weekly Digest logo' });
+    expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.logo).toEqual({
+      remoteUrl: 'https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/logo-sample.svg',
+      alt: 'Weekly Digest logo',
+    });
   });
 
   it('requires explicit reset confirmation and revokes template URLs', async () => {
@@ -137,6 +163,7 @@ describe('EditorPanel integration', () => {
     await user.clear(heading);
     await user.type(heading, 'Temporary');
     await user.click(screen.getByRole('button', { name: 'Reset draft' }));
+    expect(screen.getByRole('alertdialog', { name: 'Reset this draft?' })).toBeVisible();
     expect(store.getState().editor.draftsByTemplateId['newsletter-digest']?.fields.heading).toBe('Temporary');
     await user.click(screen.getByRole('button', { name: /^Reset$/ }));
     expect(localAssets.releaseTemplate).toHaveBeenCalledWith('newsletter-digest');
@@ -237,21 +264,32 @@ describe('EditorPanel integration', () => {
       expect.objectContaining({ backgroundColor: '#123456', textColor: '#FEDCBA' }),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await leaveEditor(user);
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     await user.click(screen.getByRole('radio', { name: /Onboarding steps/ }));
     await expandSection(user, 'Steps');
+    const firstStep = screen.getByRole('group', { name: 'Step 1' });
+    await user.clear(within(firstStep).getByLabelText('Number color'));
+    await user.type(within(firstStep).getByLabelText('Number color'), '#123456');
+    await user.clear(within(firstStep).getByLabelText('Number background'));
+    await user.type(within(firstStep).getByLabelText('Number background'), '#FEDCBA');
     await user.click(screen.getByRole('button', { name: 'Remove step 2' }));
     await user.click(screen.getByRole('button', { name: 'Add step' }));
     await user.click(screen.getByRole('button', { name: 'Add step' }));
     const steps = store.getState().editor.draftsByTemplateId['welcome-onboarding']?.fields.steps;
     expect(Array.isArray(steps) && steps).toHaveLength(4);
+    expect(Array.isArray(steps) && steps[0]).toEqual(
+      expect.objectContaining({
+        numberColor: '#123456',
+        numberBackgroundColor: '#FEDCBA',
+      }),
+    );
   }, 20_000);
 
   it('keeps benefits as individually editable repeated items', async () => {
     const user = userEvent.setup();
     const { store } = renderEditor();
-    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await leaveEditor(user);
     await user.click(screen.getByRole('radio', { name: /Promotional offer/ }));
     await expandSection(user, 'Benefits');
 

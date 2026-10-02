@@ -42,7 +42,7 @@ export function validateEmailUrl(
   if (
     purpose === 'image' &&
     mode === 'preview' &&
-    /^(?:\.\/|\/)[a-z0-9/_-]+\.(?:png|jpe?g|webp|gif)$/i.test(candidate)
+    /^(?:\.\/|\/)[a-z0-9/_-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(candidate)
   ) {
     return { valid: true, normalized: candidate };
   }

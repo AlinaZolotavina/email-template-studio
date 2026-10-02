@@ -54,6 +54,8 @@ const benefitValueSchema = z.strictObject({
 const stepValueSchema = z.strictObject({
   title: z.string(),
   text: z.string(),
+  numberColor: hexColorSchema.default('#0369A1'),
+  numberBackgroundColor: hexColorSchema.default('#EFF6FF'),
 });
 
 const articleValueSchema = z.strictObject({

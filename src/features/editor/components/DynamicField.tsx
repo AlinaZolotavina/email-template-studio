@@ -1,5 +1,5 @@
 import { ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { useId, useState, type ChangeEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 
 import { isHexColor } from '../../../email/core';
 import type {
@@ -18,6 +18,7 @@ interface DynamicFieldProps {
   field: TemplateField;
   value: EmailFieldValue;
   onChange: (value: EmailFieldValue) => void;
+  onLocalDirtyChange?: (dirty: boolean) => void;
   hideLabel?: boolean;
   onImageFile?: (file: File, itemIndex?: number) => void | Promise<void>;
   onRemoveLocalImage?: (itemIndex?: number) => void;
@@ -32,10 +33,57 @@ function FieldErrors({ id, errors }: { id: string; errors: string[] }) {
   );
 }
 
+function StepColorControl({
+  label,
+  onChange,
+  onDirtyChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
+  value: string;
+}) {
+  const id = useId();
+  const [colorState, setColorState] = useState({ input: value, base: value });
+  const draft = colorState.base === value ? colorState.input : value;
+
+  const update = (nextValue: string) => {
+    setColorState({ input: nextValue, base: value });
+    const valid = isHexColor(nextValue);
+    onDirtyChange(!valid && nextValue !== value);
+    if (valid) onChange(nextValue.toUpperCase());
+  };
+
+  return (
+    <>
+      <label htmlFor={id}>{label}</label>
+      <div className={styles.colorControl}>
+        <input
+          aria-label={`${label} picker`}
+          className={styles.colorPicker}
+          type="color"
+          value={isHexColor(draft) ? draft : value}
+          onChange={(event) => update(event.target.value)}
+        />
+        <input
+          aria-invalid={!isHexColor(draft)}
+          className={styles.textInput}
+          id={id}
+          spellCheck={false}
+          value={draft}
+          onChange={(event) => update(event.target.value)}
+        />
+      </div>
+    </>
+  );
+}
+
 export function DynamicField({
   field,
   value,
   onChange,
+  onLocalDirtyChange,
   hideLabel = false,
   onImageFile,
   onRemoveLocalImage,
@@ -51,6 +99,7 @@ export function DynamicField({
   const [buttonBackgroundState, setButtonBackgroundState] = useState({ input: currentButton.backgroundColor, base: currentButton.backgroundColor });
   const [buttonTextState, setButtonTextState] = useState({ input: currentButton.textColor, base: currentButton.textColor });
   const [fileError, setFileError] = useState<string>();
+  const nestedLocalDirty = useRef(new Set<string>());
   const colorDraft = colorState.base === colorValue ? colorState.input : colorValue;
   const buttonBackgroundDraft = buttonBackgroundState.base === currentButton.backgroundColor ? buttonBackgroundState.input : currentButton.backgroundColor;
   const buttonTextDraft = buttonTextState.base === currentButton.textColor ? buttonTextState.input : currentButton.textColor;
@@ -64,6 +113,11 @@ export function DynamicField({
   }
   if (fileError !== undefined) errors.push(fileError);
   const describedBy = errors.length > 0 ? errorId : undefined;
+  const reportNestedLocalDirty = (key: string, dirty: boolean) => {
+    if (dirty) nestedLocalDirty.current.add(key);
+    else nestedLocalDirty.current.delete(key);
+    onLocalDirtyChange?.(nestedLocalDirty.current.size > 0);
+  };
 
   if (field.type === 'link-list') {
     const links = Array.isArray(value) ? value as LinkValue[] : [];
@@ -130,9 +184,21 @@ export function DynamicField({
             <input id={`${id}-${index}-title`} className={styles.textInput} value={step.title} onChange={(event) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item))} />
             <label htmlFor={`${id}-${index}-text`}>Description</label>
             <textarea id={`${id}-${index}-text`} className={styles.textInput} rows={3} value={step.text} onChange={(event) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item))} />
+            <StepColorControl
+              label="Number color"
+              onChange={(numberColor) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, numberColor } : item))}
+              onDirtyChange={(dirty) => reportNestedLocalDirty(`${index}:numberColor`, dirty)}
+              value={step.numberColor}
+            />
+            <StepColorControl
+              label="Number background"
+              onChange={(numberBackgroundColor) => onChange(steps.map((item, itemIndex) => itemIndex === index ? { ...item, numberBackgroundColor } : item))}
+              onDirtyChange={(dirty) => reportNestedLocalDirty(`${index}:numberBackgroundColor`, dirty)}
+              value={step.numberBackgroundColor}
+            />
           </div>
         ))}
-        <button className={styles.addItemButton} type="button" onClick={() => onChange([...steps, { title: `Step ${steps.length + 1}`, text: 'Describe this step' }])}>
+        <button className={styles.addItemButton} type="button" onClick={() => onChange([...steps, { title: `Step ${steps.length + 1}`, text: 'Describe this step', numberColor: '#0369A1', numberBackgroundColor: '#EFF6FF' }])}>
           <Plus aria-hidden="true" size={14} /> Add step
         </button>
         <FieldErrors id={errorId} errors={errors} />
@@ -195,7 +261,9 @@ export function DynamicField({
   if (field.type === 'color') {
     const updateColor = (nextValue: string) => {
       setColorState({ input: nextValue, base: colorValue });
-      if (isHexColor(nextValue)) onChange(nextValue.toUpperCase());
+      const valid = isHexColor(nextValue);
+      onLocalDirtyChange?.(!valid && nextValue !== colorValue);
+      if (valid) onChange(nextValue.toUpperCase());
     };
     return (
       <div className={styles.field}>
@@ -248,7 +316,14 @@ export function DynamicField({
       } else {
         setButtonTextState({ input: nextValue, base: button.textColor });
       }
-      if (isHexColor(nextValue)) onChange({ ...button, [key]: nextValue.toUpperCase() });
+      const valid = isHexColor(nextValue);
+      const nextBackground = key === 'backgroundColor' ? nextValue : buttonBackgroundDraft;
+      const nextText = key === 'textColor' ? nextValue : buttonTextDraft;
+      onLocalDirtyChange?.(
+        (!isHexColor(nextBackground) && nextBackground !== button.backgroundColor) ||
+          (!isHexColor(nextText) && nextText !== button.textColor),
+      );
+      if (valid) onChange({ ...button, [key]: nextValue.toUpperCase() });
     };
     return (
       <div className={styles.fieldset} role="group" aria-label={field.label} aria-describedby={describedBy}>

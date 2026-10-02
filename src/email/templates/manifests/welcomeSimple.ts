@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
+import { createSampleLogo, createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 export const welcomeSimpleManifest = {
   id: 'welcome-simple',
@@ -18,7 +18,7 @@ export const welcomeSimpleManifest = {
       showAction: true,
       showFooter: true,
       preheader: 'Welcome - your account is ready.',
-      logo: { remoteUrl: '', alt: 'Company logo' },
+      logo: createSampleLogo('Company logo'),
       greeting: 'Welcome!',
       subheading: "We're glad you're here.",
       body: "You're all set to get started. Take a moment to explore and see what you can do.",

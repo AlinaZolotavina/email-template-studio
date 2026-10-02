@@ -32,7 +32,7 @@ function step(session: RenderSession, value: StepValue, index: number): EmailHtm
                 children: emailText({
                   text: String(index + 1),
                   style: {
-                    color: session.draft.theme.accentColor,
+                    color: value.numberColor,
                     fontFamily: session.draft.theme.fontFamily,
                     fontSize: 18,
                     fontWeight: 700,
@@ -44,7 +44,7 @@ function step(session: RenderSession, value: StepValue, index: number): EmailHtm
                 align: 'center',
                 valign: 'middle',
                 style: {
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: value.numberBackgroundColor,
                   borderRadius: 999,
                   width: 38,
                   height: 38,

@@ -37,7 +37,7 @@ describe('App workspace shell', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Email Template Studio' }),
     ).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Email creation, simplified' })).toBeVisible();
     expect(screen.getAllByRole('radio')).toHaveLength(2);
     expect(screen.getByRole('tab', { name: 'Newsletter' })).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Welcome' })).toBeVisible();
@@ -48,7 +48,7 @@ describe('App workspace shell', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Weekly digest' })).toBeVisible();
     expect(screen.getByDisplayValue('Weekly digest')).toBeVisible();
-    expect(screen.getByText('newsletter-digest')).toBeVisible();
+    expect(screen.getByText('newsletter-digest')).not.toBeVisible();
     expect(screen.getByTitle('Email preview')).toHaveAttribute(
       'srcdoc',
       expect.stringContaining('Weekly digest'),
@@ -74,18 +74,48 @@ describe('App workspace shell', () => {
     expect(within(screen.getByLabelText('Template editor')).getByText('Simple welcome')).toBeVisible();
   });
 
+  it('filters templates in the active category', async () => {
+    const user = userEvent.setup();
+    renderApp(createAppStore(), false);
+
+    const search = screen.getByRole('searchbox', { name: 'Search templates' });
+    await user.type(search, 'promotional');
+    expect(screen.getByRole('radio', { name: /Promotional offer/ })).toBeVisible();
+    expect(screen.queryByRole('radio', { name: /Weekly digest/ })).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, 'missing template');
+    expect(screen.getByRole('status')).toHaveTextContent('No matching templates');
+  });
+
   it('opens a routed template directly and returns to the catalogue', async () => {
     window.history.replaceState(null, '', '#/studio/welcome-onboarding');
     const user = userEvent.setup();
     renderApp(createAppStore(), false);
 
     expect(screen.getByRole('heading', { name: 'Onboarding steps' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Reset draft' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Templates' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(window.location.hash).toBe('#/templates');
-    expect(screen.getByRole('heading', { name: 'Choose. Customize. Copy.' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Email creation, simplified' })).toBeVisible();
   });
 
-  it('keeps an edited draft when the user switches away and back', async () => {
+  it('keeps an edited template open when exit confirmation is cancelled', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await user.clear(screen.getByLabelText('Heading'));
+    await user.type(screen.getByLabelText('Heading'), 'Keep this heading');
+
+    await user.click(screen.getByRole('button', { name: 'Templates' }));
+    expect(screen.getByRole('alertdialog', { name: 'Leave the editor?' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(window.location.hash).toBe('#/studio/newsletter-digest');
+    expect(screen.getByLabelText('Heading')).toHaveValue('Keep this heading');
+  });
+
+  it('resets an edited draft when the user leaves the editor', async () => {
     const user = userEvent.setup();
     const store = createAppStore();
     store.dispatch(
@@ -98,13 +128,15 @@ describe('App workspace shell', () => {
     renderApp(store);
 
     await user.click(screen.getByRole('button', { name: 'Templates' }));
+    await user.click(screen.getByRole('button', { name: 'Leave and reset' }));
     await user.click(screen.getByRole('tab', { name: 'Welcome' }));
     await user.click(screen.getByRole('radio', { name: /Onboarding steps/ }));
     await user.click(screen.getByRole('button', { name: 'Templates' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Newsletter' }));
     await user.click(screen.getByRole('radio', { name: /Weekly digest/ }));
 
-    expect(screen.getByDisplayValue('Edited digest heading')).toBeVisible();
+    expect(screen.getByDisplayValue('Weekly digest')).toBeVisible();
   });
 
   it('updates preview srcDoc and export code in the same editor update', async () => {
@@ -139,7 +171,7 @@ describe('App workspace shell', () => {
     expect(screen.getByLabelText('Generated HTML')).toHaveValue(exportHtml);
   });
 
-  it('blocks both export actions for a local-only image', () => {
+  it('warns without blocking export actions for a local-only image', () => {
     const store = createAppStore();
     store.dispatch(
       imageLocalPreviewAttached({
@@ -150,10 +182,10 @@ describe('App workspace shell', () => {
     );
     renderApp(store);
 
-    expect(screen.getByRole('button', { name: 'Copy HTML' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Download .html' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Copy HTML' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download .html' })).toBeEnabled();
     expect(
-      screen.getByText('Add a valid public image URL before exporting.'),
+      screen.getByText(/Local preview images are not embedded/),
     ).toBeVisible();
     expect(
       screen.getByLabelText<HTMLTextAreaElement>('Generated HTML').value,

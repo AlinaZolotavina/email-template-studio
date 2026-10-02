@@ -7,6 +7,7 @@ import {
   listTemplates,
   UnknownTemplateError,
 } from './templateRegistry';
+import { toPersistedDraft } from '../editor/draftUtils';
 
 describe('template registry', () => {
   it('contains each supported template ID exactly once', () => {
@@ -139,7 +140,7 @@ describe('persisted session schema', () => {
       persistedSessionV1Schema.safeParse({
         version: 1,
         selectedTemplateId: 'welcome-simple',
-        draftsByTemplateId: { 'welcome-simple': draft },
+        draftsByTemplateId: { 'welcome-simple': toPersistedDraft(draft) },
         previewViewport: 'desktop',
       }).success,
     ).toBe(true);

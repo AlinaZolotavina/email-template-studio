@@ -2,6 +2,8 @@ import {
   selectCanExport,
   selectExportBlockReasons,
   selectExportRenderResult,
+  selectExportWarnings,
+  selectIsSelectedDraftDirty,
   selectPreviewRenderResult,
   selectSelectedDraft,
 } from './selectors';
@@ -15,8 +17,23 @@ import {
   templatePickerOpened,
   templateSelected,
 } from '../features/templates/templatesSlice';
+import type { ArticleValue } from '../email/types';
 
 describe('state selectors', () => {
+  it('reports whether the selected draft differs from its defaults', () => {
+    const store = createAppStore();
+    expect(selectIsSelectedDraftDirty(store.getState())).toBe(false);
+
+    store.dispatch(
+      fieldChanged({
+        templateId: 'newsletter-digest',
+        key: 'heading',
+        value: 'Changed heading',
+      }),
+    );
+    expect(selectIsSelectedDraftDirty(store.getState())).toBe(true);
+  });
+
   it('memoizes render results until the selected draft changes', () => {
     const store = createAppStore();
     const first = selectExportRenderResult(store.getState());
@@ -46,7 +63,7 @@ describe('state selectors', () => {
     );
   });
 
-  it('uses blob URLs only in preview and blocks local-only export', () => {
+  it('uses blob URLs only in preview and warns without blocking export', () => {
     const store = createAppStore();
     const image = { templateId: 'newsletter-digest' as const, key: 'logo' };
     store.dispatch(
@@ -60,9 +77,10 @@ describe('state selectors', () => {
       'blob:preview-logo',
     );
     expect(selectExportRenderResult(store.getState()).html).not.toContain('blob:');
-    expect(selectCanExport(store.getState())).toBe(false);
-    expect(selectExportBlockReasons(store.getState())).toContain(
-      'Add a valid public image URL before exporting.',
+    expect(selectCanExport(store.getState())).toBe(true);
+    expect(selectExportBlockReasons(store.getState())).toEqual([]);
+    expect(selectExportWarnings(store.getState())).toContain(
+      'Local preview images are not embedded in the exported HTML. Replace them with public image URLs before using it.',
     );
 
     store.dispatch(
@@ -79,6 +97,7 @@ describe('state selectors', () => {
     );
     expect(selectCanExport(store.getState())).toBe(true);
     expect(selectExportBlockReasons(store.getState())).toEqual([]);
+    expect(selectExportWarnings(store.getState())).toHaveLength(1);
   });
 
   it('blocks export for a non-empty image URL with a forbidden protocol', () => {
@@ -96,5 +115,25 @@ describe('state selectors', () => {
     expect(selectExportBlockReasons(store.getState())).toContain(
       'Add a valid public image URL before exporting.',
     );
+  });
+
+  it('warns about a local preview nested inside an article', () => {
+    const store = createAppStore();
+    const articles = structuredClone(
+      selectSelectedDraft(store.getState()).fields.articles,
+    ) as ArticleValue[];
+    expect(articles.length).toBeGreaterThan(0);
+
+    articles[0].image.localPreviewUrl = 'data:image/png;base64,preview';
+    store.dispatch(
+      fieldChanged({
+        templateId: 'newsletter-digest',
+        key: 'articles',
+        value: articles,
+      }),
+    );
+
+    expect(selectCanExport(store.getState())).toBe(true);
+    expect(selectExportWarnings(store.getState())).toHaveLength(1);
   });
 });

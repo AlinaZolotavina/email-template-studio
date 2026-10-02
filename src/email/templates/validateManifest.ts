@@ -47,7 +47,11 @@ function matchesFieldType(field: TemplateField, value: EmailFieldValue): boolean
       );
     case 'step-list':
       return Array.isArray(value) && value.every((item) =>
-        isRecord(item) && typeof item.title === 'string' && typeof item.text === 'string'
+        isRecord(item) &&
+        typeof item.title === 'string' &&
+        typeof item.text === 'string' &&
+        typeof item.numberColor === 'string' &&
+        typeof item.numberBackgroundColor === 'string'
       );
     case 'article-list':
       return Array.isArray(value) && value.every((item) =>

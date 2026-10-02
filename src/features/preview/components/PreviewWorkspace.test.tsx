@@ -66,6 +66,23 @@ describe('PreviewWorkspace', () => {
     expect(screen.getByLabelText('Generated HTML')).toHaveValue(originalCode);
   });
 
+  it('changes the preview scale without changing the rendered HTML', () => {
+    render(<StatefulWorkspace />);
+    const frame = screen.getByTitle('Email preview');
+    const originalSrcDoc = frame.getAttribute('srcdoc');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+
+    expect(screen.getByLabelText('Preview zoom level')).toHaveTextContent('70%');
+    expect(frame).toHaveStyle({ transform: 'scale(0.7)' });
+    expect(frame).toHaveAttribute('srcdoc', originalSrcDoc);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+
+    expect(screen.getByLabelText('Preview zoom level')).toHaveTextContent('80%');
+    expect(frame).toHaveStyle({ transform: 'scale(0.8)' });
+  });
+
   it('supports arrow-key navigation across viewport tabs', () => {
     render(<StatefulWorkspace />);
     const desktop = screen.getByRole('tab', { name: 'Desktop' });
@@ -175,6 +192,26 @@ describe('PreviewWorkspace', () => {
     expect(
       screen.getByText('Add a valid public image URL before exporting.'),
     ).toBeVisible();
+  });
+
+  it('shows image warnings without disabling export actions', () => {
+    render(
+      <PreviewWorkspace
+        canExport
+        exportBlockReasons={[]}
+        exportResult={exportResult}
+        exportWarnings={['Replace local images with public URLs.']}
+        onViewportChange={vi.fn()}
+        previewResult={previewResult}
+        templateId="newsletter-digest"
+        viewport="desktop"
+      />,
+    );
+
+    expect(screen.getByText('Check image URLs')).toBeVisible();
+    expect(screen.getByText('Replace local images with public URLs.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Copy HTML' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download .html' })).toBeEnabled();
   });
 
   it('announces copy errors', async () => {

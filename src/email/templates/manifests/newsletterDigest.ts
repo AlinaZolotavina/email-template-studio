@@ -1,5 +1,5 @@
 import type { TemplateManifest } from '../../types';
-import { createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
+import { createSampleLogo, createTheme, THEME_COLOR_FIELD_KEYS, THEME_COLOR_FIELDS } from './shared';
 
 const asset = (name: string, alt: string) => ({
   remoteUrl: `https://raw.githubusercontent.com/AlinaZolotavina/email-template-studio/main/public/template-assets/${name}`,
@@ -11,7 +11,7 @@ export const newsletterDigestManifest = {
   id: 'newsletter-digest',
   name: 'Weekly digest',
   category: 'newsletter',
-  description: 'A compact newsletter with three editorial highlights.',
+  description: 'A flexible newsletter for a customizable collection of editorial highlights.',
   thumbnailPath: 'template-thumbnails/newsletter-digest.png',
   defaults: {
     templateId: 'newsletter-digest',
@@ -23,7 +23,7 @@ export const newsletterDigestManifest = {
       showArticles: true,
       showFooter: true,
       preheader: 'This week: product thinking, design systems, and growth.',
-      logo: { remoteUrl: '', alt: 'Weekly Digest logo' },
+      logo: createSampleLogo('Weekly Digest logo'),
       heading: 'Weekly digest',
       intro: 'Your weekly dose of insights, ideas, and inspiration.',
       articles: [
