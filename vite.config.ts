@@ -13,4 +13,7 @@ function normalizeBase(value: string | undefined): string {
 export default defineConfig({
   base: normalizeBase(process.env.VITE_BASE_PATH),
   plugins: [react()],
+  build: {
+    cssMinify: 'esbuild',
+  },
 });
